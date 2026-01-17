@@ -1,4 +1,4 @@
-# План первого запуска AI Mock Interview
+# План первого запуска AI Mock Interview (FIXED TO CHECK GIT)
 
 ## Цель
 

@@ -19,13 +19,13 @@ export default function Home() {
   const [showPayment, setShowPayment] = useState(false)
   const { resetInterview, sessionId } = useInterviewStore()
 
-  // Handle initial load animation
+  // Handle initial load animation (short delay for smoother UX)
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsInitialLoading(false)
-    }, 2000) // Initial sphere animation duration
+    }, 800) // Reduced from 2s - faster first paint
     
     return () => clearTimeout(timer)
   }, [])

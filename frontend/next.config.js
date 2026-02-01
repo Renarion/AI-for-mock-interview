@@ -4,10 +4,15 @@ const nextConfig = {
   images: {
     domains: [],
   },
-  // Skip ESLint during production build (rules reference @typescript-eslint which isn't installed)
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Reduce bundle size - tree-shake heavy packages
+  experimental: {
+    optimizePackageImports: ['framer-motion'],
+  },
+  // Disable telemetry for faster builds
+  telemetry: false,
 }
 
 module.exports = nextConfig

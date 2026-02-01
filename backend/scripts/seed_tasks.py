@@ -3,6 +3,12 @@ Script to seed the database with sample tasks.
 Run this after migrations to populate the tasks table.
 """
 import asyncio
+import sys
+from pathlib import Path
+
+# Ensure project root (backend/) is on path when running as script
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import async_session_maker, init_db
 from app.models.task import Task

@@ -42,6 +42,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://analyticsinterview.live/api}
+        - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY:-}
     container_name: mock_interview_frontend
     restart: unless-stopped
     ports:
@@ -52,10 +55,7 @@ services:
       - CLERK_SECRET_KEY=${CLERK_SECRET_KEY:-}
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
+    # No volume mount - uses pre-built production files from image (faster loading)
 
 volumes:
   postgres_data:

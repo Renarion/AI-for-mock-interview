@@ -204,18 +204,17 @@ nano backend/.env
 
 ```env
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/mock_interview
-CLERK_SECRET_KEY=sk_test_ТВОЙ_КЛЮЧ
-CLERK_JWT_ISSUER=https://ТВОЙ_ID.clerk.accounts.dev
+SECRET_KEY=сгенерируй-случайную-строку-минимум-32-символа
 OPENAI_API_KEY=sk-ТВОЙ_OPENAI_КЛЮЧ
 LLM_PROVIDER=openai
 YOOKASSA_SHOP_ID=ТВОЙ_SHOP_ID
 YOOKASSA_SECRET_KEY=ТВОЙ_СЕКРЕТНЫЙ_КЛЮЧ
-SECRET_KEY=сгенерируй-случайную-строку-минимум-32-символа
 DEBUG=false
 FRONTEND_URL=https://твой-домен.com
 ```
 
-> **Ключи Clerk и OpenAI:** если их ещё нет, пошаговый гайд — в файле **[KEYS_SETUP_GUIDE.md](KEYS_SETUP_GUIDE.md)**.
+> **SECRET_KEY** — обязателен для JWT (регистрация/логин). Сгенерировать: `openssl rand -hex 32`  
+> **OpenAI:** пошаговый гайд — в файле **[KEYS_SETUP_GUIDE.md](KEYS_SETUP_GUIDE.md)**.
 
 **Создай файл `frontend/.env.local`:**
 
@@ -227,8 +226,6 @@ nano frontend/.env.local
 
 ```env
 NEXT_PUBLIC_API_URL=https://твой-домен.com/api
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_ТВОЙ_ПУБЛИЧНЫЙ_КЛЮЧ
-CLERK_SECRET_KEY=sk_test_ТВОЙ_СЕКРЕТНЫЙ_КЛЮЧ
 ```
 
 **Сохрани и выйди:** `Ctrl+X`, затем `Y`, затем `Enter`

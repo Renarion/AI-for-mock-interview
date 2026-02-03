@@ -71,7 +71,7 @@ Create three files (examples are provided in the repo):
 
 1. **Project root `.env`** — copy `.env.example`
    ```env
-   NEXT_PUBLIC_API_URL=http://localhost:3000/api
+   NEXT_PUBLIC_API_URL=http://localhost:8000
    FRONTEND_URL=http://localhost:3000
    SECRET_KEY=local-dev-secret
    ```
@@ -91,10 +91,11 @@ Create three files (examples are provided in the repo):
    ```
    > For local development without Docker set the host in `DATABASE_URL` to `localhost`.
 
-3. **`frontend/.env.local`**
+3. **`frontend/.env.local`** (for local dev)
    ```env
    NEXT_PUBLIC_API_URL=http://localhost:8000
    ```
+   For production build, set `NEXT_PUBLIC_API_URL` in `.env` before `docker-compose build`.
 
 ### Running with Docker
 

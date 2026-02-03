@@ -11,8 +11,6 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['framer-motion'],
   },
-  // Disable telemetry for faster builds
-  telemetry: false,
 }
 
 module.exports = nextConfig

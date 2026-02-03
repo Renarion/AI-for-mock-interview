@@ -2,6 +2,7 @@
 import uuid
 from datetime import datetime, timedelta
 from typing import Optional
+import bcrypt
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,18 +12,34 @@ from app.config import get_settings
 from app.models.user import User
 
 settings = get_settings()
-# bcrypt_sha256 first: no 72-byte limit, supports any password length
-# bcrypt: for verifying old hashes (backward compatibility)
-pwd_context = CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated="auto")
+# For verifying old passlib hashes (bcrypt_sha256, bcrypt)
+_pwd_context = CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated="auto")
+
+
+def _to_72_bytes(password: str) -> bytes:
+    """Truncate password to 72 bytes for bcrypt (UTF-8 safe)."""
+    encoded = password.encode("utf-8")
+    if len(encoded) <= 72:
+        return encoded
+    truncated = encoded[:72]
+    # Avoid splitting multi-byte chars
+    while truncated and 0x80 <= truncated[-1] < 0xC0:
+        truncated = truncated[:-1]
+    return truncated
 
 
 def hash_password(password: str) -> str:
-    """Hash password (any length supported via bcrypt_sha256)."""
-    return pwd_context.hash(password)
+    """Hash password using bcrypt (truncates to 72 bytes)."""
+    pw_bytes = _to_72_bytes(password)
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pw_bytes, salt).decode("ascii")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    """Verify password. Supports bcrypt (new) and passlib formats (legacy)."""
+    if hashed.startswith("$2a$") or hashed.startswith("$2b$"):
+        return bcrypt.checkpw(_to_72_bytes(plain), hashed.encode("ascii"))
+    return _pwd_context.verify(plain, hashed)
 
 
 def create_access_token(user_id: str) -> str:

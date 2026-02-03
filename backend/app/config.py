@@ -1,10 +1,16 @@
 """Application configuration."""
 from functools import lru_cache
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=False,
+        extra="ignore",  # ignore unknown env vars (e.g. old CLERK_*)
+    )
     
     # Database
     database_url: str = "postgresql+asyncpg://user:password@localhost:5432/mock_interview"
@@ -22,10 +28,6 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production"
     debug: bool = True
     frontend_url: str = "http://localhost:3000"
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
 
 
 @lru_cache()

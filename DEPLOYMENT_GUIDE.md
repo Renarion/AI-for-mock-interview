@@ -797,6 +797,7 @@ docker-compose down
 
 # Запуск
 docker-compose up -d
+
 ```
 
 ---

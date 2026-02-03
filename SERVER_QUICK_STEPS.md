@@ -68,14 +68,14 @@ docker-compose exec backend python scripts/seed_tasks.py
 
 ---
 
-## 4. Ключи Clerk и OpenAI
+## 4. Переменные окружения
 
-Если ключей ещё нет — пошаговый гайд: **[KEYS_SETUP_GUIDE.md](KEYS_SETUP_GUIDE.md)**.
+Пошаговый гайд по ключам: **[KEYS_SETUP_GUIDE.md](KEYS_SETUP_GUIDE.md)**.
 
-После получения ключей создай на сервере:
+Создай на сервере:
 
-- `backend/.env` — с `CLERK_*`, `OPENAI_API_KEY`, `FRONTEND_URL=https://analyticsinterview.live`
-- `frontend/.env.local` — с `NEXT_PUBLIC_API_URL=https://analyticsinterview.live/api`, `NEXT_PUBLIC_CLERK_*`, `CLERK_SECRET_KEY`
+- `backend/.env` — скопируй из `backend/.env.example`, укажи `SECRET_KEY`, `OPENAI_API_KEY`, `FRONTEND_URL=https://analyticsinterview.live`
+- Корневой `.env` — для docker-compose: `NEXT_PUBLIC_API_URL=https://analyticsinterview.live/api`, `FRONTEND_URL=https://analyticsinterview.live`, `SECRET_KEY`
 
 Перезапуск после изменения .env:
 

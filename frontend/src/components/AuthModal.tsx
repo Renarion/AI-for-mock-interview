@@ -63,17 +63,41 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     onClose()
   }
 
+  const validatePassword = (pwd: string, min = 6) => {
+    if (pwd.length < min) {
+      return `Пароль должен содержать минимум ${min} символов`
+    }
+    if (pwd.length > 72) {
+      return 'Пароль не должен превышать 72 символа'
+    }
+    return null
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    const trimmedLogin = login.trim()
+    const pwdError = validatePassword(password, 1)
+    if (!trimmedLogin) {
+      setError('Введите почту или Telegram ник')
+      return
+    }
+    if (pwdError) {
+      setError(pwdError)
+      return
+    }
     setLoading(true)
     try {
-      const res = await authApi.login({ login, password })
+      const res = await authApi.login({ login: trimmedLogin, password })
       setToken(res.access_token)
       handleClose()
       onSuccess?.()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Неверный логин или пароль')
+      if (err instanceof ApiError && err.status === 401) {
+        setError('Неверный логин или пароль')
+      } else {
+        setError(err instanceof ApiError ? err.message : 'Ошибка входа. Попробуйте ещё раз.')
+      }
     } finally {
       setLoading(false)
     }
@@ -86,15 +110,21 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       setError('Пароли не совпадают')
       return
     }
-    if (regPassword.length < 6) {
-      setError('Пароль должен быть не менее 6 символов')
+    const pwdError = validatePassword(regPassword)
+    if (pwdError) {
+      setError(pwdError)
+      return
+    }
+    const emailTrimmed = email.trim()
+    if (!emailTrimmed) {
+      setError('Введите почту')
       return
     }
     setLoading(true)
     try {
       const res = await authApi.register({
         name,
-        email,
+        email: emailTrimmed,
         telegram_username: telegramUsername.trim() || undefined,
         password: regPassword,
       })
@@ -174,6 +204,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                       className="w-full px-4 py-3 pr-12 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/40 focus:border-[#8B5CF6] focus:outline-none"
                       placeholder="••••••••"
                       required
+                      maxLength={72}
                     />
                     <button
                       type="button"
@@ -216,6 +247,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                     className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/40 focus:border-[#8B5CF6] focus:outline-none"
                     placeholder="email@example.com"
                     required
+                    pattern="^[^@\s]+@[^@\s]+\.[^@\s]+$"
+                    title="Введите корректную почту (например, user@mail.ru)"
                   />
                 </div>
                 <div>
@@ -242,6 +275,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                       placeholder="••••••••"
                       required
                       minLength={6}
+                      maxLength={72}
                     />
                     <button
                       type="button"
@@ -251,6 +285,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                       <EyeIcon show={showRegPassword} />
                     </button>
                   </div>
+                  <p className="mt-1 text-xs text-white/50">
+                    Пароль должен содержать от 6 до 72 символов.
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm text-white/70 mb-1">Повторите пароль</label>
@@ -262,6 +299,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                       className="w-full px-4 py-3 pr-12 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/40 focus:border-[#8B5CF6] focus:outline-none"
                       placeholder="••••••••"
                       required
+                      maxLength={72}
                     />
                     <button
                       type="button"

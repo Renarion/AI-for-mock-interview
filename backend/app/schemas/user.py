@@ -1,21 +1,21 @@
 """User-related schemas."""
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, EmailStr
 
 
 class RegisterRequest(BaseModel):
     """Schema for registration."""
-    name: str
-    email: str
+    name: str = Field(..., min_length=2, max_length=100)
+    email: EmailStr
     telegram_username: Optional[str] = None
-    password: str
+    password: str = Field(..., min_length=6, max_length=72)
 
 
 class LoginRequest(BaseModel):
     """Schema for login (email or telegram + password)."""
-    login: str  # email or telegram username
-    password: str
+    login: str = Field(..., min_length=1, max_length=255)  # email or telegram username
+    password: str = Field(..., max_length=72)
 
 
 class UserResponse(BaseModel):

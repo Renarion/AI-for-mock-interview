@@ -1,5 +1,12 @@
 """Pydantic schemas for API validation."""
-from app.schemas.user import UserCreate, UserResponse, UserStatus
+from app.schemas.user import (
+    RegisterRequest,
+    LoginRequest,
+    UserResponse,
+    UserStatus,
+    UserMeResponse,
+    AuthResponse,
+)
 from app.schemas.task import TaskResponse, TaskSelection
 from app.schemas.interview import (
     InterviewStart,
@@ -11,9 +18,12 @@ from app.schemas.interview import (
 from app.schemas.payment import PaymentCreate, PaymentResponse, PricingPlan
 
 __all__ = [
-    "UserCreate",
-    "UserResponse", 
+    "RegisterRequest",
+    "LoginRequest",
+    "UserResponse",
     "UserStatus",
+    "UserMeResponse",
+    "AuthResponse",
     "TaskResponse",
     "TaskSelection",
     "InterviewStart",

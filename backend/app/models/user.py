@@ -10,15 +10,19 @@ class User(Base):
     Used to check trial attempts and paid questions remaining.
     """
     __tablename__ = "users"
-    
+
     user_id = Column(String, primary_key=True, index=True)
     created_dttm = Column(DateTime, default=datetime.utcnow)
-    trial_question_flg = Column(Boolean, default=True)  # True = trial available
+    # Display name
+    name = Column(String, nullable=False)
+    # Login: email (required) and telegram (optional)
+    email = Column(String, unique=True, nullable=False, index=True)
+    telegram_username = Column(String, unique=True, nullable=True, index=True)
+    password_hash = Column(String, nullable=False)
+    # Entitlements: 1 free question for new users (trial_question_flg), then paid
+    trial_question_flg = Column(Boolean, default=True)  # True = 1 free question available
     paid_questions_number_left = Column(Integer, default=0)
     os = Column(String, nullable=True)
     country = Column(String, nullable=True)
     city = Column(String, nullable=True)
-    registration_type = Column(String, default="google")  # google, email, etc.
-    
-    # Clerk user ID for linking
-    clerk_user_id = Column(String, unique=True, nullable=True)
+    registration_type = Column(String, default="email")

@@ -4,22 +4,46 @@ from typing import Optional
 from pydantic import BaseModel
 
 
-class UserCreate(BaseModel):
-    """Schema for creating a new user."""
-    clerk_user_id: str
-    os: Optional[str] = None
-    country: Optional[str] = None
-    city: Optional[str] = None
-    registration_type: str = "google"
+class RegisterRequest(BaseModel):
+    """Schema for registration."""
+    name: str
+    email: str
+    telegram_username: Optional[str] = None
+    password: str
+
+
+class LoginRequest(BaseModel):
+    """Schema for login (email or telegram + password)."""
+    login: str  # email or telegram username
+    password: str
 
 
 class UserResponse(BaseModel):
-    """Schema for user response."""
+    """Schema for user response (public)."""
     user_id: str
+    name: str
+    email: str
+    telegram_username: Optional[str] = None
     created_dttm: datetime
     trial_question_flg: bool
     paid_questions_number_left: int
-    
+    questions_remaining: int  # 1 if trial else 0 + paid
+
+    class Config:
+        from_attributes = True
+
+
+class UserMeResponse(BaseModel):
+    """Schema for /auth/me: user data for profile (password masked)."""
+    user_id: str
+    name: str
+    email: str
+    telegram_username: Optional[str] = None
+    password_masked: str  # e.g. "********"
+    questions_remaining: int
+    trial_question_flg: bool
+    paid_questions_number_left: int
+
     class Config:
         from_attributes = True
 
@@ -30,3 +54,10 @@ class UserStatus(BaseModel):
     has_trial: bool
     questions_remaining: int
     user_type: str  # new, trial, paid, expired
+
+
+class AuthResponse(BaseModel):
+    """Schema for login/register response."""
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse

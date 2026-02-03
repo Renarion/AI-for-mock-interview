@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { useAuth } from '@clerk/nextjs'
+import { useAuthStore } from '@/store/authStore'
 import { paymentApi } from '@/lib/api'
 import { useState } from 'react'
 
@@ -13,7 +13,7 @@ import { useState } from 'react'
 export default function MockPaymentPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { getToken } = useAuth()
+  const token = useAuthStore((s) => s.token)
   const [isProcessing, setIsProcessing] = useState(false)
   
   const paymentId = searchParams.get('payment_id')
@@ -24,7 +24,6 @@ export default function MockPaymentPage() {
     setIsProcessing(true)
     
     try {
-      const token = await getToken()
       if (!token) throw new Error('Not authenticated')
       
       await paymentApi.mockCompletePayment(token, paymentId)

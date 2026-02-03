@@ -6,6 +6,7 @@ from typing import List
 from app.database import get_db
 from app.routers.auth import require_auth
 from app.services.interview import InterviewService
+from app.services.auth import AuthService
 from app.schemas.task import TaskSelection, TaskResponse
 from app.schemas.interview import (
     InterviewStart,
@@ -122,6 +123,9 @@ async def submit_answer(
             answer=answer_data.answer,
             user=user,
         )
+        # Consume one question per submitted answer
+        auth_service = AuthService(db)
+        await auth_service.consume_one_question(user)
         
         can_continue, completed, remaining = interview_service.can_continue(session_id)
         

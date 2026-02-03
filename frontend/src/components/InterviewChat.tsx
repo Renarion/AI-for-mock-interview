@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAuth } from '@clerk/nextjs'
+import { useAuthStore } from '@/store/authStore'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useInterviewStore, TaskFeedback } from '@/store/interviewStore'
@@ -22,7 +22,7 @@ type ChatMessage = {
 }
 
 export default function InterviewChat({ onComplete, onPaymentRequired }: InterviewChatProps) {
-  const { getToken } = useAuth()
+  const token = useAuthStore((s) => s.token)
   const {
     sessionId,
     tasks,
@@ -117,7 +117,6 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
     setInputValue('')
     
     try {
-      const token = await getToken()
       if (!token) throw new Error('Требуется авторизация')
       
       const response = await interviewApi.submitAnswer(token, sessionId, {
@@ -141,6 +140,8 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
       }
       
       setMessages((prev) => prev.filter((m) => m.id !== 'loading').concat(feedbackMessage))
+      
+      useAuthStore.getState().fetchUser()
       
       if (response.can_continue && response.tasks_remaining > 0) {
         // Show continue options
@@ -191,11 +192,11 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
     setError(null)
     
     try {
-      const token = await getToken()
       if (!token) throw new Error('Требуется авторизация')
       
       const report = await interviewApi.finishInterview(token, sessionId)
       setFinalReport(report)
+      useAuthStore.getState().fetchUser()
       onComplete()
     } catch (err) {
       console.error('Failed to finish interview:', err)

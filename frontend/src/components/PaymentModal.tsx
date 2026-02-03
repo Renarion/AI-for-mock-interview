@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { useAuth } from '@clerk/nextjs'
+import { useAuthStore } from '@/store/authStore'
 import { paymentApi } from '@/lib/api'
 
 interface PaymentModalProps {
@@ -20,7 +20,7 @@ interface PricingPlan {
 }
 
 export default function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
-  const { getToken } = useAuth()
+  const token = useAuthStore((s) => s.token)
   const [plans, setPlans] = useState<PricingPlan[]>([])
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -53,7 +53,6 @@ export default function PaymentModal({ onClose, onSuccess }: PaymentModalProps) 
     setError(null)
     
     try {
-      const token = await getToken()
       if (!token) throw new Error('Требуется авторизация')
       
       const response = await paymentApi.createPayment(

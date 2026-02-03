@@ -2,39 +2,47 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useUser, SignInButton, useClerk } from '@clerk/nextjs'
 import LandingPage from '@/components/LandingPage'
 import SelectionFlow from '@/components/SelectionFlow'
 import InterviewChat from '@/components/InterviewChat'
 import FinalReport from '@/components/FinalReport'
 import PaymentModal from '@/components/PaymentModal'
+import AuthModal from '@/components/AuthModal'
+import ProfileDropdown from '@/components/ProfileDropdown'
 import { useInterviewStore } from '@/store/interviewStore'
+import { useAuthStore } from '@/store/authStore'
 
 type AppScreen = 'landing' | 'selection' | 'interview' | 'report' | 'payment'
 
 export default function Home() {
-  const { isLoaded, isSignedIn, user } = useUser()
-  const { signOut } = useClerk()
+  const { token, user, fetchUser } = useAuthStore()
+  const isSignedIn = !!token && !!user
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('landing')
   const [showPayment, setShowPayment] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
   const { resetInterview, sessionId } = useInterviewStore()
 
-  // Handle initial load animation (short delay for smoother UX)
   const [isInitialLoading, setIsInitialLoading] = useState(true)
-  
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsInitialLoading(false)
-    }, 800) // Reduced from 2s - faster first paint
-    
-    return () => clearTimeout(timer)
+    const t = setTimeout(() => setIsInitialLoading(false), 800)
+    return () => clearTimeout(t)
   }, [])
+
+  useEffect(() => {
+    if (token) fetchUser()
+  }, [token, fetchUser])
 
   const handleStartInterview = () => {
     if (!isSignedIn) {
-      // Clerk will handle the sign-in flow
+      setShowAuthModal(true)
       return
     }
+    setCurrentScreen('selection')
+  }
+
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false)
     setCurrentScreen('selection')
   }
 
@@ -58,6 +66,7 @@ export default function Home() {
   const handlePaymentSuccess = () => {
     setShowPayment(false)
     setCurrentScreen('landing')
+    fetchUser()
   }
 
   const handleBackToLanding = () => {
@@ -67,10 +76,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen relative overflow-hidden">
-      {/* Background gradient */}
       <div className="fixed inset-0 bg-gradient-radial from-background-elevated via-background to-black z-0" />
-      
-      {/* Animated background particles */}
       <div className="fixed inset-0 z-0 overflow-hidden">
         {[...Array(20)].map((_, i) => (
           <div
@@ -85,7 +91,11 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Main content */}
+      {/* Profile icon - top right */}
+      <div className="fixed top-4 right-4 z-20">
+        <ProfileDropdown />
+      </div>
+
       <div className="relative z-10">
         <AnimatePresence mode="wait">
           {currentScreen === 'landing' && (
@@ -98,9 +108,10 @@ export default function Home() {
             >
               <LandingPage
                 isLoading={isInitialLoading}
-                isSignedIn={isSignedIn || false}
+                isSignedIn={isSignedIn}
                 onStart={handleStartInterview}
                 onPayClick={() => setShowPayment(true)}
+                onStartClick={() => setShowAuthModal(true)}
               />
             </motion.div>
           )}
@@ -152,7 +163,16 @@ export default function Home() {
         </AnimatePresence>
       </div>
 
-      {/* Payment Modal */}
+      <AnimatePresence>
+        {showAuthModal && (
+          <AuthModal
+            isOpen={showAuthModal}
+            onClose={() => setShowAuthModal(false)}
+            onSuccess={handleAuthSuccess}
+          />
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {showPayment && (
           <PaymentModal
@@ -162,7 +182,6 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Social links footer */}
       <footer className="fixed bottom-6 left-6 z-20 flex items-center gap-3">
         <span className="text-white/50 text-sm">Connect for updates</span>
         <div className="flex gap-2">

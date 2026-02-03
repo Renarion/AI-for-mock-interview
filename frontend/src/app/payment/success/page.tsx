@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { useAuth } from '@clerk/nextjs'
+import { useAuthStore } from '@/store/authStore'
 import { paymentApi } from '@/lib/api'
 
 export default function PaymentSuccessPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { getToken } = useAuth()
+  const token = useAuthStore((s) => s.token)
+  const fetchUser = useAuthStore((s) => s.fetchUser)
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [error, setError] = useState<string | null>(null)
 
@@ -25,11 +26,11 @@ export default function PaymentSuccessPage() {
       }
       
       try {
-        const token = await getToken()
         if (!token) throw new Error('Not authenticated')
         
         // In development, use mock complete endpoint
         await paymentApi.mockCompletePayment(token, paymentId)
+        fetchUser()
         setStatus('success')
       } catch (err) {
         console.error('Payment verification failed:', err)
@@ -39,7 +40,7 @@ export default function PaymentSuccessPage() {
     }
     
     processPayment()
-  }, [searchParams, getToken])
+  }, [searchParams, token, fetchUser])
 
   const handleContinue = () => {
     router.push('/')

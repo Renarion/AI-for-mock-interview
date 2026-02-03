@@ -32,7 +32,10 @@ async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promis
   
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Unknown error' }))
-    throw new ApiError(response.status, error.detail || 'Request failed')
+    const msg = Array.isArray(error.detail)
+      ? (error.detail[0]?.msg || 'Request failed')
+      : (error.detail || 'Request failed')
+    throw new ApiError(response.status, msg)
   }
   
   return response.json()
@@ -40,16 +43,37 @@ async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promis
 
 // Auth API
 export const authApi = {
-  getStatus: (token: string) =>
+  getStatus: (token: string | null) =>
     apiRequest<{
       is_authenticated: boolean
       has_trial: boolean
       questions_remaining: number
       user_type: string
-    }>('/auth/status', { token }),
+    }>('/auth/status', { token: token || undefined }),
   
-  register: (token: string, data: { clerk_user_id: string; os?: string; country?: string }) =>
-    apiRequest('/auth/register', { method: 'POST', body: data, token }),
+  register: (data: { name: string; email: string; telegram_username?: string; password: string }) =>
+    apiRequest<{ access_token: string; user: { user_id: string; name: string; email: string; telegram_username: string | null; questions_remaining: number } }>(
+      '/auth/register',
+      { method: 'POST', body: data }
+    ),
+  
+  login: (data: { login: string; password: string }) =>
+    apiRequest<{ access_token: string; user: { user_id: string; name: string; email: string; telegram_username: string | null; questions_remaining: number } }>(
+      '/auth/login',
+      { method: 'POST', body: data }
+    ),
+  
+  getMe: (token: string) =>
+    apiRequest<{
+      user_id: string
+      name: string
+      email: string
+      telegram_username: string | null
+      password_masked: string
+      questions_remaining: number
+      trial_question_flg: boolean
+      paid_questions_number_left: number
+    }>('/auth/me', { token }),
 }
 
 // Interview API

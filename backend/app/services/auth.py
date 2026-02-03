@@ -1,118 +1,136 @@
-"""Authentication service using Clerk."""
-import httpx
-from jose import jwt, JWTError
+"""Authentication service: JWT + email/telegram + password."""
+import uuid
+from datetime import datetime, timedelta
 from typing import Optional
+from jose import jwt, JWTError
+from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_
 
 from app.config import get_settings
 from app.models.user import User
 
 settings = get_settings()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return pwd_context.verify(plain, hashed)
+
+
+def create_access_token(user_id: str) -> str:
+    expire = datetime.utcnow() + timedelta(days=30)
+    payload = {"sub": user_id, "exp": expire}
+    return jwt.encode(
+        payload,
+        settings.secret_key,
+        algorithm="HS256",
+    )
+
+
+def decode_token(token: str) -> Optional[str]:
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+        return payload.get("sub")
+    except JWTError:
+        return None
 
 
 class AuthService:
-    """Service for handling authentication via Clerk."""
-    
+    """Service for registration, login and JWT verification."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
-    
-    async def verify_clerk_token(self, token: str) -> Optional[dict]:
-        """
-        Verify Clerk JWT token and return user data.
-        
-        In production, this should verify the JWT signature using Clerk's JWKS.
-        For now, this is a simplified implementation.
-        """
-        try:
-            # TODO: Implement proper JWT verification with Clerk JWKS
-            # For development, decode without verification
-            if settings.debug:
-                payload = jwt.decode(
-                    token,
-                    options={"verify_signature": False}
-                )
-                return payload
-            
-            # Production: Verify with Clerk's public key
-            # JWKS endpoint: https://<clerk-domain>/.well-known/jwks.json
-            async with httpx.AsyncClient() as client:
-                jwks_url = f"{settings.clerk_jwt_issuer}/.well-known/jwks.json"
-                response = await client.get(jwks_url)
-                jwks = response.json()
-                
-                # Verify JWT with JWKS
-                # This is a placeholder - implement proper JWKS verification
-                unverified_header = jwt.get_unverified_header(token)
-                # ... verification logic ...
-                
-            return None
-        except JWTError:
-            return None
-    
-    async def get_or_create_user(
-        self, 
-        clerk_user_id: str,
-        metadata: Optional[dict] = None
+
+    async def register(
+        self,
+        name: str,
+        email: str,
+        password: str,
+        telegram_username: Optional[str] = None,
     ) -> User:
-        """Get existing user or create a new one."""
-        # Try to find existing user
-        result = await self.db.execute(
-            select(User).where(User.clerk_user_id == clerk_user_id)
-        )
-        user = result.scalar_one_or_none()
-        
-        if user:
-            return user
-        
-        # Create new user with trial access
-        import uuid
+        """Register a new user. Email required; telegram optional."""
+        email_lower = email.strip().lower()
+        if telegram_username:
+            telegram_username = telegram_username.strip().lstrip("@")
+        # Check email unique
+        r = await self.db.execute(select(User).where(User.email == email_lower))
+        if r.scalar_one_or_none():
+            raise ValueError("Пользователь с такой почтой уже зарегистрирован")
+        if telegram_username:
+            r2 = await self.db.execute(
+                select(User).where(User.telegram_username == telegram_username)
+            )
+            if r2.scalar_one_or_none():
+                raise ValueError("Этот ник в Telegram уже используется")
         user = User(
             user_id=str(uuid.uuid4()),
-            clerk_user_id=clerk_user_id,
+            name=name.strip(),
+            email=email_lower,
+            telegram_username=telegram_username or None,
+            password_hash=hash_password(password),
             trial_question_flg=True,
             paid_questions_number_left=0,
-            os=metadata.get("os") if metadata else None,
-            country=metadata.get("country") if metadata else None,
-            city=metadata.get("city") if metadata else None,
-            registration_type=metadata.get("registration_type", "google") if metadata else "google",
+            registration_type="email",
         )
-        
         self.db.add(user)
         await self.db.flush()
-        
         return user
-    
+
+    async def login(self, login: str, password: str) -> Optional[User]:
+        """Login by email or telegram username."""
+        login_clean = login.strip().lower().lstrip("@")
+        r = await self.db.execute(
+            select(User).where(
+                or_(
+                    User.email == login_clean,
+                    User.telegram_username == login_clean,
+                )
+            )
+        )
+        user = r.scalar_one_or_none()
+        if not user or not verify_password(password, user.password_hash):
+            return None
+        return user
+
+    async def get_user_by_id(self, user_id: str) -> Optional[User]:
+        """Get user by user_id."""
+        r = await self.db.execute(select(User).where(User.user_id == user_id))
+        return r.scalar_one_or_none()
+
     async def get_user_status(self, user: User) -> dict:
         """Get user's current status for frontend."""
-        if user.paid_questions_number_left > 0:
-            user_type = "paid"
+        questions_remaining = (1 if user.trial_question_flg else 0) + user.paid_questions_number_left
+        if questions_remaining > 0:
+            user_type = "paid" if user.paid_questions_number_left > 0 else "trial"
         elif user.trial_question_flg:
             user_type = "trial"
         else:
             user_type = "expired"
-        
         return {
             "is_authenticated": True,
             "has_trial": user.trial_question_flg,
-            "questions_remaining": user.paid_questions_number_left + (3 if user.trial_question_flg else 0),
+            "questions_remaining": questions_remaining,
             "user_type": user_type,
         }
-    
-    async def consume_trial(self, user: User) -> bool:
-        """Mark trial as used."""
-        if not user.trial_question_flg:
-            return False
-        
-        user.trial_question_flg = False
+
+    async def consume_one_question(self, user: User) -> bool:
+        """Consume one question (trial first, then paid). Returns True if consumed."""
+        if user.trial_question_flg:
+            user.trial_question_flg = False
+            await self.db.flush()
+            return True
+        if user.paid_questions_number_left > 0:
+            user.paid_questions_number_left -= 1
+            await self.db.flush()
+            return True
+        return False
+
+    async def add_paid_questions(self, user: User, count: int) -> None:
+        """Add paid questions to user balance."""
+        user.paid_questions_number_left += count
         await self.db.flush()
-        return True
-    
-    async def consume_paid_question(self, user: User) -> bool:
-        """Consume one paid question from user's balance."""
-        if user.paid_questions_number_left <= 0:
-            return False
-        
-        user.paid_questions_number_left -= 1
-        await self.db.flush()
-        return True

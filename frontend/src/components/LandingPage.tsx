@@ -1,7 +1,6 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { SignInButton, useUser } from '@clerk/nextjs'
 import AnimatedSphere from './AnimatedSphere'
 
 interface LandingPageProps {
@@ -9,9 +8,18 @@ interface LandingPageProps {
   isSignedIn: boolean
   onStart: () => void
   onPayClick: () => void
+  onStartClick: () => void
 }
 
-export default function LandingPage({ isLoading, isSignedIn, onStart, onPayClick }: LandingPageProps) {
+export default function LandingPage({ isLoading, isSignedIn, onStart, onPayClick, onStartClick }: LandingPageProps) {
+  const handleStartClick = () => {
+    if (isSignedIn) {
+      onStart()
+    } else {
+      onStartClick()
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center relative">
       {/* Sphere container */}
@@ -25,20 +33,12 @@ export default function LandingPage({ isLoading, isSignedIn, onStart, onPayClick
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: isLoading ? 2 : 0, duration: 0.5 }}
           >
-            {isSignedIn ? (
-              <button
-                onClick={onStart}
-                className="btn-primary text-white shadow-2xl"
-              >
-                Start the interview
-              </button>
-            ) : (
-              <SignInButton mode="modal">
-                <button className="btn-primary text-white shadow-2xl">
-                  Start the interview
-                </button>
-              </SignInButton>
-            )}
+            <button
+              onClick={handleStartClick}
+              className="btn-primary text-white shadow-2xl"
+            >
+              Start the interview
+            </button>
           </motion.div>
           
           {/* Learn more link */}

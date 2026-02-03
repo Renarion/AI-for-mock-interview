@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAuth } from '@clerk/nextjs'
+import { useAuthStore } from '@/store/authStore'
 import { useInterviewStore } from '@/store/interviewStore'
 import { interviewApi } from '@/lib/api'
 
@@ -20,7 +20,7 @@ interface Option {
 }
 
 export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps) {
-  const { getToken } = useAuth()
+  const token = useAuthStore((s) => s.token)
   const { setSelection, setSessionId, setTasks } = useInterviewStore()
   
   const [currentStep, setCurrentStep] = useState<Step>('specialization')
@@ -104,7 +104,6 @@ export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps
     setError(null)
     
     try {
-      const token = await getToken()
       if (!token) {
         throw new Error('Требуется авторизация')
       }
@@ -262,7 +261,7 @@ export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps
                 <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <span className="text-sm">1</span>
                 </div>
-                <p>Вам будет предложено <strong className="text-white">3 задачи</strong> по выбранной теме.</p>
+                <p>Вам будет предложено <strong className="text-white">от 1 до 3 задач</strong> по выбранной теме (по количеству доступных вопросов).</p>
               </div>
               
               <div className="flex items-start gap-3">
@@ -283,7 +282,7 @@ export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps
                 <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <span className="text-sm">4</span>
                 </div>
-                <p>После каждой задачи вы получите фидбек. Можно <strong className="text-white">завершить раньше</strong> или решить все 3.</p>
+                <p>После каждой задачи вы получите фидбек. Можно <strong className="text-white">завершить раньше</strong> или решить все задачи.</p>
               </div>
               
               <div className="flex items-start gap-3">

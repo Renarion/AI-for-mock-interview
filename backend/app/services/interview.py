@@ -32,16 +32,20 @@ class InterviewService:
         """
         Start a new interview session.
         Returns session_id and list of tasks.
+        Each submitted answer consumes 1 question; new users have 1 free.
         """
-        # Check user has available questions
-        if not user.trial_question_flg and user.paid_questions_number_left <= 0:
-            raise ValueError("No questions available. Please purchase a plan.")
+        questions_left = (1 if user.trial_question_flg else 0) + user.paid_questions_number_left
+        if questions_left <= 0:
+            raise ValueError("Нет доступных вопросов. Приобретите пакет вопросов.")
         
         # Get tasks based on selection
         tasks = await self._select_tasks(selection)
+        if len(tasks) < 1:
+            raise ValueError("Недостаточно задач для выбранных параметров.")
         
-        if len(tasks) < 3:
-            raise ValueError("Not enough tasks available for this selection.")
+        # Limit tasks to user's question balance (max 3 per session)
+        max_tasks = min(3, questions_left, len(tasks))
+        tasks = tasks[:max_tasks]
         
         # Create session
         session_id = str(uuid.uuid4())
@@ -56,7 +60,7 @@ class InterviewService:
                     "task_answer": t.task_answer,
                     "subtype": t.subtype,
                 }
-                for t in tasks[:3]
+                for t in tasks
             ],
             "current_task_index": 0,
             "answers": [],
@@ -68,15 +72,16 @@ class InterviewService:
         _sessions[session_id] = session
         
         # Create task responses
+        total = len(tasks)
         task_responses = [
             TaskResponse(
                 task_id=t.task_id,
                 task_question=t.task_question,
                 task_number=i + 1,
-                total_tasks=3,
+                total_tasks=total,
                 time_limit_minutes=20,
             )
-            for i, t in enumerate(tasks[:3])
+            for i, t in enumerate(tasks)
         ]
         
         return session_id, task_responses
@@ -126,11 +131,12 @@ class InterviewService:
             return None
         
         task = session["tasks"][idx]
+        total = len(session["tasks"])
         return {
             "task_id": task["task_id"],
             "task_question": task["task_question"],
             "task_number": idx + 1,
-            "total_tasks": 3,
+            "total_tasks": total,
             "time_limit_minutes": 20,
         }
     
@@ -216,19 +222,11 @@ class InterviewService:
             TaskFeedback(**fb) for fb in session["feedbacks"]
         ]
         
-        # Generate final report
+        # Generate final report (questions already consumed per submit_answer)
         report = await self.llm_service.generate_final_report(
             task_feedbacks=task_feedbacks,
             selection=session["selection"],
         )
-        
-        # Consume user's question allowance
-        if user.trial_question_flg:
-            user.trial_question_flg = False
-        elif user.paid_questions_number_left >= 3:
-            user.paid_questions_number_left -= 3
-        
-        await self.db.flush()
         
         return {
             "session_id": session_id,
@@ -248,6 +246,6 @@ class InterviewService:
             return False, 0, 0
         
         completed = session["current_task_index"]
-        remaining = 3 - completed
-        
+        total = len(session["tasks"])
+        remaining = total - completed
         return remaining > 0 and session["status"] == "active", completed, remaining

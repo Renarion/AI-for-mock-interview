@@ -5,7 +5,7 @@ AI-powered mock interview platform for Data Analyst and Product Analyst position
 ## 🚀 Features
 
 - **Animated Landing Page** - Beautiful pulsating sphere animation inspired by AI/futuristic themes
-- **Google Authentication** - Seamless sign-in via Clerk
+- **Custom Authentication** - Registration and login by email or Telegram nickname + password (no external providers, works without VPN)
 - **Interview Selection** - Choose specialization, experience level, company tier, and topic
 - **AI-Powered Feedback** - Get detailed feedback on your answers from LLM (OpenAI/Anthropic)
 - **Final Reports** - Comprehensive analysis with study recommendations
@@ -22,8 +22,8 @@ AI-powered mock interview platform for Data Analyst and Product Analyst position
               ┌────────────┼────────────┐
               ▼            ▼            ▼
         ┌─────────┐  ┌─────────┐  ┌─────────┐
-        │  Clerk  │  │   LLM   │  │YooKassa │
-        │  Auth   │  │   API   │  │ Payment │
+        │ JWT +   │  │   LLM   │  │YooKassa │
+        │ DB Auth │  │   API   │  │ Payment │
         └─────────┘  └─────────┘  └─────────┘
 ```
 
@@ -72,14 +72,12 @@ Create `.env` files in both `backend/` and `frontend/` directories:
 **backend/.env:**
 ```env
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/mock_interview
-CLERK_SECRET_KEY=sk_test_xxxxx
-CLERK_JWT_ISSUER=https://xxxxx.clerk.accounts.dev
+SECRET_KEY=your-secret-key-for-jwt
 OPENAI_API_KEY=sk-xxxxx
 # or ANTHROPIC_API_KEY=sk-ant-xxxxx
 LLM_PROVIDER=openai
 YOOKASSA_SHOP_ID=xxxxx
 YOOKASSA_SECRET_KEY=xxxxx
-SECRET_KEY=your-secret-key
 DEBUG=true
 FRONTEND_URL=http://localhost:3000
 ```
@@ -87,8 +85,6 @@ FRONTEND_URL=http://localhost:3000
 **frontend/.env.local:**
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxxxx
-CLERK_SECRET_KEY=sk_test_xxxxx
 ```
 
 ### Running with Docker
@@ -138,7 +134,7 @@ npm run dev
 ## 📱 User Flow
 
 1. **Landing** - User sees animated sphere, clicks "Start the interview"
-2. **Auth** - If not logged in, Google sign-in via Clerk
+2. **Auth** - If not logged in, a modal opens: login (email or Telegram + password) or register (name, email, optional Telegram, password)
 3. **Selection** - Choose specialization → experience level → company tier → topic
 4. **Interview** - Answer 3 questions with 20-minute timer each
 5. **Feedback** - Get AI-powered feedback after each answer
@@ -160,9 +156,10 @@ Key components:
 ## 🔌 API Endpoints
 
 ### Auth
-- `POST /auth/register` - Register new user
-- `GET /auth/status` - Get user status
-- `GET /auth/me` - Get current user info
+- `POST /auth/register` - Register (name, email, optional telegram_username, password)
+- `POST /auth/login` - Login (login = email or telegram, password)
+- `GET /auth/status` - Get user status (optional Bearer token)
+- `GET /auth/me` - Get current user profile (Bearer token required)
 
 ### Interview
 - `POST /interview/start` - Start new interview session
@@ -179,8 +176,7 @@ Key components:
 
 The following features have stubs for further implementation:
 
-1. **Clerk JWT Verification** - Currently simplified for development
-2. **YooKassa Integration** - Mock payment flow, needs real integration
+1. **YooKassa Integration** - Mock payment flow, needs real integration
 3. **Redis Session Storage** - Currently in-memory, add Redis for production
 4. **More Tasks** - Add more interview questions to the database
 5. **Analytics** - Add tracking for user behavior

@@ -14,15 +14,27 @@ settings = get_settings()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+def _truncate_to_72_bytes(password: str) -> str:
+    """Truncate password to 72 bytes for bcrypt (avoids splitting multi-byte chars)."""
+    encoded = password.encode("utf-8")
+    if len(encoded) <= 72:
+        return password
+    truncated = encoded[:72]
+    while truncated:
+        try:
+            return truncated.decode("utf-8")
+        except UnicodeDecodeError:
+            truncated = truncated[:-1]
+    return ""
+
+
 def hash_password(password: str) -> str:
-    """Hash password with bcrypt (max 72 bytes)."""
-    if len(password.encode("utf-8")) > 72:
-        raise ValueError("Пароль не должен превышать 72 символа")
-    return pwd_context.hash(password)
+    """Hash password with bcrypt (max 72 bytes). Truncates if longer."""
+    return pwd_context.hash(_truncate_to_72_bytes(password))
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return pwd_context.verify(_truncate_to_72_bytes(plain), hashed)
 
 
 def create_access_token(user_id: str) -> str:

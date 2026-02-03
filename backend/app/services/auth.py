@@ -1,9 +1,11 @@
-"""Authentication service: JWT + email/telegram + password."""
+"""Authentication service: JWT + Argon2 password hashing (no length limit)."""
 import uuid
 from datetime import datetime, timedelta
 from typing import Optional
+
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 from jose import jwt, JWTError
-from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 
@@ -11,31 +13,27 @@ from app.config import get_settings
 from app.models.user import User
 
 settings = get_settings()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def _truncate_password(password: str) -> str:
-    """Truncate password to 72 bytes for bcrypt (UTF-8 safe). Returns string."""
-    encoded = password.encode("utf-8")
-    if len(encoded) <= 72:
-        return password
-    truncated = encoded[:72]
-    while truncated and 0x80 <= truncated[-1] < 0xC0:
-        truncated = truncated[:-1]
-    return truncated.decode("utf-8", errors="replace") if truncated else ""
+_ph = PasswordHasher(time_cost=2, memory_cost=65536)  # reasonable for web app
 
 
 def hash_password(password: str) -> str:
-    """Hash password with bcrypt (truncates to 72 bytes)."""
-    return pwd_context.hash(_truncate_password(password))
+    """Hash password with Argon2 (supports any length)."""
+    return _ph.hash(password)
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    """Verify password."""
-    return pwd_context.verify(_truncate_password(plain), hashed)
+    """Verify password against Argon2 hash."""
+    try:
+        _ph.verify(hashed, plain)
+        return True
+    except VerifyMismatchError:
+        return False
+    except Exception:
+        return False
 
 
 def create_access_token(user_id: str) -> str:
+    """Create JWT access token."""
     expire = datetime.utcnow() + timedelta(days=30)
     payload = {"sub": user_id, "exp": expire}
     return jwt.encode(
@@ -46,6 +44,7 @@ def create_access_token(user_id: str) -> str:
 
 
 def decode_token(token: str) -> Optional[str]:
+    """Decode JWT token, return user_id or None."""
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
         return payload.get("sub")
@@ -54,7 +53,7 @@ def decode_token(token: str) -> Optional[str]:
 
 
 class AuthService:
-    """Service for registration, login and JWT verification."""
+    """Registration, login, JWT verification."""
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -66,20 +65,22 @@ class AuthService:
         password: str,
         telegram_username: Optional[str] = None,
     ) -> User:
-        """Register a new user. Email required; telegram optional."""
+        """Register a new user."""
         email_lower = email.strip().lower()
         if telegram_username:
             telegram_username = telegram_username.strip().lstrip("@")
-        # Check email unique
+
         r = await self.db.execute(select(User).where(User.email == email_lower))
         if r.scalar_one_or_none():
             raise ValueError("Пользователь с такой почтой уже зарегистрирован")
+
         if telegram_username:
             r2 = await self.db.execute(
                 select(User).where(User.telegram_username == telegram_username)
             )
             if r2.scalar_one_or_none():
                 raise ValueError("Этот ник в Telegram уже используется")
+
         user = User(
             user_id=str(uuid.uuid4()),
             name=name.strip(),
@@ -116,9 +117,9 @@ class AuthService:
         return r.scalar_one_or_none()
 
     async def get_user_status(self, user: User) -> dict:
-        """Get user's current status for frontend."""
-        questions_remaining = (1 if user.trial_question_flg else 0) + user.paid_questions_number_left
-        if questions_remaining > 0:
+        """Get user status for frontend."""
+        q = (1 if user.trial_question_flg else 0) + user.paid_questions_number_left
+        if q > 0:
             user_type = "paid" if user.paid_questions_number_left > 0 else "trial"
         elif user.trial_question_flg:
             user_type = "trial"
@@ -127,12 +128,12 @@ class AuthService:
         return {
             "is_authenticated": True,
             "has_trial": user.trial_question_flg,
-            "questions_remaining": questions_remaining,
+            "questions_remaining": q,
             "user_type": user_type,
         }
 
     async def consume_one_question(self, user: User) -> bool:
-        """Consume one question (trial first, then paid). Returns True if consumed."""
+        """Consume one question (trial first, then paid)."""
         if user.trial_question_flg:
             user.trial_question_flg = False
             await self.db.flush()

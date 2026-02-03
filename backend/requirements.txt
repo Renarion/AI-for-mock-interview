@@ -9,11 +9,11 @@ asyncpg==0.29.0
 alembic==1.13.1
 psycopg2-binary==2.9.9
 
-# Authentication
+# Authentication (Argon2 — no 72-byte limit, OWASP recommended)
+argon2-cffi>=23.1.0
 pyjwt==2.8.0
 python-jose[cryptography]==3.3.0
 httpx==0.26.0
-passlib[bcrypt]==1.7.4
 
 # LLM Integration
 openai==1.10.0

@@ -9,7 +9,7 @@ class RegisterRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     email: str = Field(..., min_length=3, max_length=255)
     telegram_username: Optional[str] = None
-    password: str = Field(..., min_length=6, max_length=72)
+    password: str = Field(..., min_length=6, max_length=128)
 
     @field_validator("email")
     @classmethod
@@ -23,7 +23,7 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     """Schema for login (email or telegram + password)."""
     login: str = Field(..., min_length=1, max_length=255)  # email or telegram username
-    password: str = Field(..., max_length=72)
+    password: str = Field(..., max_length=128)
 
 
 class UserResponse(BaseModel):

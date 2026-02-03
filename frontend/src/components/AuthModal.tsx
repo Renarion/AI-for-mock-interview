@@ -67,8 +67,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     if (pwd.length < min) {
       return `Пароль должен содержать минимум ${min} символов`
     }
-    if (pwd.length > 72) {
-      return 'Пароль не должен превышать 72 символа'
+    if (pwd.length > 128) {
+      return 'Пароль не должен превышать 128 символов'
     }
     return null
   }
@@ -204,7 +204,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                       className="w-full px-4 py-3 pr-12 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/40 focus:border-[#8B5CF6] focus:outline-none"
                       placeholder="••••••••"
                       required
-                      maxLength={72}
+                      maxLength={128}
                     />
                     <button
                       type="button"
@@ -275,7 +275,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                       placeholder="••••••••"
                       required
                       minLength={6}
-                      maxLength={72}
+                      maxLength={128}
                     />
                     <button
                       type="button"
@@ -286,7 +286,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                     </button>
                   </div>
                   <p className="mt-1 text-xs text-white/50">
-                    Пароль должен содержать от 6 до 72 символов.
+                    Пароль должен содержать от 6 до 128 символов.
                   </p>
                 </div>
                 <div>
@@ -299,7 +299,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                       className="w-full px-4 py-3 pr-12 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/40 focus:border-[#8B5CF6] focus:outline-none"
                       placeholder="••••••••"
                       required
-                      maxLength={72}
+                      maxLength={128}
                     />
                     <button
                       type="button"

@@ -67,25 +67,34 @@ AI-powered mock interview platform for Data Analyst and Product Analyst position
 
 ### Environment Variables
 
-Create `.env` files in both `backend/` and `frontend/` directories:
+Create three files (examples are provided in the repo):
 
-**backend/.env:**
-```env
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/mock_interview
-SECRET_KEY=your-secret-key-for-jwt
-OPENAI_API_KEY=sk-xxxxx
-# or ANTHROPIC_API_KEY=sk-ant-xxxxx
-LLM_PROVIDER=openai
-YOOKASSA_SHOP_ID=xxxxx
-YOOKASSA_SECRET_KEY=xxxxx
-DEBUG=true
-FRONTEND_URL=http://localhost:3000
-```
+1. **Project root `.env`** — copy `.env.example`
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:3000/api
+   FRONTEND_URL=http://localhost:3000
+   SECRET_KEY=local-dev-secret
+   ```
+   This file is used by `docker-compose` for variable substitution during builds.
 
-**frontend/.env.local:**
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
+2. **`backend/.env`** — copy `backend/.env.example`
+   ```env
+   DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/mock_interview
+   SECRET_KEY=change-me-in-production
+   OPENAI_API_KEY=sk-xxxxx
+   # or ANTHROPIC_API_KEY=sk-ant-xxxxx
+   LLM_PROVIDER=openai
+   YOOKASSA_SHOP_ID=xxxxx
+   YOOKASSA_SECRET_KEY=xxxxx
+   DEBUG=false
+   FRONTEND_URL=https://analyticsinterview.live
+   ```
+   > For local development without Docker set the host in `DATABASE_URL` to `localhost`.
+
+3. **`frontend/.env.local`**
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:8000
+   ```
 
 ### Running with Docker
 
@@ -93,17 +102,19 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 # Start all services
 docker-compose up -d
 
-# Seed database with sample tasks
-docker-compose exec backend python scripts/seed_tasks.py
-
 # View logs
 docker-compose logs -f
+
+# (Optional) seed database with tasks
+docker-compose exec backend python scripts/seed_tasks.py
 ```
 
 The application will be available at:
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
 - API Docs: http://localhost:8000/docs
+
+> Backend container automatically runs `alembic upgrade head` on each start (`backend/start.sh`).
 
 ### Running Locally (Development)
 
@@ -120,7 +131,7 @@ alembic upgrade head
 # Seed tasks
 python scripts/seed_tasks.py
 
-# Start server
+# Start server (migrations run automatically in docker image via start.sh)
 uvicorn app.main:app --reload
 ```
 
@@ -176,11 +187,11 @@ Key components:
 
 The following features have stubs for further implementation:
 
-1. **YooKassa Integration** - Mock payment flow, needs real integration
-3. **Redis Session Storage** - Currently in-memory, add Redis for production
-4. **More Tasks** - Add more interview questions to the database
-5. **Analytics** - Add tracking for user behavior
-6. **Admin Panel** - Manage tasks and view analytics
+- **YooKassa Integration** - Mock payment flow, needs real integration
+- **Redis Session Storage** - Currently in-memory, add Redis for production
+- **More Tasks** - Add more interview questions to the database
+- **Analytics** - Add tracking for user behavior
+- **Admin Panel** - Manage tasks and view analytics
 
 ## 📄 License
 

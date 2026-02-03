@@ -9,11 +9,6 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "postgresql+asyncpg://user:password@localhost:5432/mock_interview"
     
-    # Clerk Authentication
-    clerk_secret_key: str = ""
-    clerk_publishable_key: str = ""
-    clerk_jwt_issuer: str = ""
-    
     # LLM API
     openai_api_key: str = ""
     anthropic_api_key: str = ""

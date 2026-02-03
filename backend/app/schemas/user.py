@@ -1,15 +1,23 @@
 """User-related schemas."""
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, field_validator
 
 
 class RegisterRequest(BaseModel):
     """Schema for registration."""
     name: str = Field(..., min_length=2, max_length=100)
-    email: EmailStr
+    email: str = Field(..., min_length=3, max_length=255)
     telegram_username: Optional[str] = None
     password: str = Field(..., min_length=6, max_length=72)
+
+    @field_validator("email")
+    @classmethod
+    def email_format(cls, v: str) -> str:
+        v = v.strip().lower()
+        if "@" not in v or "." not in v.split("@")[-1]:
+            raise ValueError("Введите корректный email (например, user@mail.ru)")
+        return v
 
 
 class LoginRequest(BaseModel):

@@ -31,10 +31,17 @@ async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promis
   })
   
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Unknown error' }))
-    const msg = Array.isArray(error.detail)
-      ? (error.detail[0]?.msg || 'Request failed')
-      : (error.detail || 'Request failed')
+    const error = await response.json().catch(() => ({}))
+    let msg: string
+    if (response.status >= 500) {
+      msg = 'Сервер временно недоступен. Попробуйте позже.'
+    } else if (error?.detail) {
+      msg = Array.isArray(error.detail)
+        ? (error.detail[0]?.msg ?? 'Ошибка запроса')
+        : String(error.detail)
+    } else {
+      msg = 'Ошибка запроса'
+    }
     throw new ApiError(response.status, msg)
   }
   

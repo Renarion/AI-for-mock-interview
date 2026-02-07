@@ -67,7 +67,7 @@ docker-compose exec backend alembic upgrade head
 ### 1.5. Заполнить задачи (если ещё не делал)
 
 ```bash
-docker-compose exec backend python scripts/seed_tasks.py
+docker-compose exec backend python -m task_migrator.seed_tasks
 ```
 
 ### 1.6. Проверка
@@ -151,7 +151,7 @@ docker-compose up -d --force-recreate
 | 2 | Обновить `backend/.env` (SECRET_KEY, без Clerk) и `frontend/.env.local` (только NEXT_PUBLIC_API_URL) |
 | 3 | `docker-compose down && docker-compose build --no-cache && docker-compose up -d` |
 | 4 | `docker-compose exec backend alembic upgrade head` |
-| 5 | При необходимости: `docker-compose exec backend python scripts/seed_tasks.py` |
+| 5 | При необходимости: `docker-compose exec backend python -m task_migrator.seed_tasks` |
 | 6 | HTTPS: `apt install certbot python3-certbot-nginx -y` |
 | 7 | `certbot --nginx -d analyticsinterview.live -d www.analyticsinterview.live` |
 | 8 | Выбрать редирект HTTP → HTTPS |

@@ -350,7 +350,7 @@ docker-compose logs db
 
 ```bash
 # Запусти seed script для заполнения базы тестовыми задачами
-docker-compose exec backend python scripts/seed_tasks.py
+docker-compose exec backend python -m task_migrator.seed_tasks
 ```
 
 ---
@@ -561,7 +561,7 @@ AI-for-mock-interview/
 | `llm.py` | **Работа с LLM (OpenAI/Anthropic)**: генерация фидбека на ответы, итоговый отчёт |
 | `payment.py` | Логика платежей: создание платежа в YooKassa, обработка webhook |
 
-#### Папка `/backend/scripts/` — Утилиты
+#### Папка `/backend/task_migrator/` — Утилиты
 
 | Файл | Описание |
 |------|----------|

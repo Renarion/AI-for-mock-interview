@@ -1,4 +1,6 @@
 #!/bin/sh
+# Entrypoint for backend container: runs DB migrations, then starts FastAPI (uvicorn).
+# Used by backend/Dockerfile CMD — do not remove.
 set -e
 
 echo "Running migrations..."

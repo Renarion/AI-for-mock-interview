@@ -41,7 +41,7 @@ AI-powered mock interview platform for Data Analyst and Product Analyst position
 │   │   ├── database.py     # DB connection
 │   │   └── main.py         # FastAPI app
 │   ├── alembic/            # Database migrations
-│   ├── scripts/            # Utility scripts
+│   ├── task_migrator/       # Task import/seed scripts
 │   ├── requirements.txt
 │   └── Dockerfile
 │
@@ -107,7 +107,7 @@ docker-compose up -d
 docker-compose logs -f
 
 # (Optional) seed database with tasks
-docker-compose exec backend python scripts/seed_tasks.py
+docker-compose exec backend python -m task_migrator.seed_tasks
 ```
 
 The application will be available at:
@@ -130,7 +130,7 @@ pip install -r requirements.txt
 alembic upgrade head
 
 # Seed tasks
-python scripts/seed_tasks.py
+python -m task_migrator.seed_tasks
 
 # Start server (migrations run automatically in docker image via start.sh)
 uvicorn app.main:app --reload

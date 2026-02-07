@@ -1,3 +1,4 @@
+# МНЕ КАЖЕТСЯ ЧТО НУЖНО УДАЛИТЬ?
 """
 Script to seed the database with sample tasks.
 Run this after migrations to populate the tasks table.

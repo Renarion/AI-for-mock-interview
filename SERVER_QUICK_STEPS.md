@@ -63,7 +63,7 @@ docker-compose ps
 Заполнение базы тестовыми задачами:
 
 ```bash
-docker-compose exec backend python scripts/seed_tasks.py
+docker-compose exec backend python -m task_migrator.seed_tasks
 ```
 
 ---

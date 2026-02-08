@@ -60,6 +60,9 @@ SUBTYPE_MAP = {
     "python": "python",
     "sql": "sql",
     "algebra & geometry": "algebra_and_geometry",
+    "algebra and geometry": "algebra_and_geometry",
+    "algeabra & geometry": "algebra_and_geometry",   # typo in Excel
+    "algeabra and geometry": "algebra_and_geometry",
 }
 
 
@@ -158,8 +161,6 @@ def normalize_row(row: dict) -> None:
     if row.get("subtype"):
         v = _normalize_value_for_map(row["subtype"])
         row["subtype"] = SUBTYPE_MAP.get(v, v.replace(" ", "_").replace("&", "and"))
-        if row["subtype"] == "algebra_and_geometry":
-            row["subtype"] = "random"
 
 
 def validate_row(row: dict, index: int) -> None:
@@ -176,7 +177,7 @@ def validate_row(row: dict, index: int) -> None:
     if typ not in ("product_analyst", "data_analyst"):
         raise SystemExit(f"Row {index + 1}: type must be product_analyst or data_analyst, got: {row.get('type')}")
     subtype = row.get("subtype", "")
-    allowed_sub = ("statistics", "ab_testing", "probability", "python", "sql", "random")
+    allowed_sub = ("statistics", "ab_testing", "probability", "python", "sql", "random", "algebra_and_geometry")
     if subtype not in allowed_sub:
         raise SystemExit(f"Row {index + 1}: subtype must be one of {allowed_sub}, got: {row.get('subtype')}")
 

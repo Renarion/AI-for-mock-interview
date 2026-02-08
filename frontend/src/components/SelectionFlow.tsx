@@ -56,6 +56,7 @@ export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps
     { id: 'probability', name: 'Теория вероятностей' },
     { id: 'python', name: 'Python' },
     { id: 'sql', name: 'SQL' },
+    { id: 'algebra_and_geometry', name: 'Алгебра и геометрия' },
     { id: 'random', name: 'Рандом (микс тем)' },
   ])
 

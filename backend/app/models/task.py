@@ -16,5 +16,5 @@ class Task(Base):
     company_tier = Column(String, nullable=False)  # tier1, tier2
     employee_level = Column(String, nullable=False)  # junior, middle, senior
     type = Column(String, nullable=False)  # product_analyst, data_analyst
-    subtype = Column(String, nullable=False)  # statistics, ab_testing, probability, python, sql, random
+    subtype = Column(String, nullable=False)  # statistics, ab_testing, probability, python, sql, algebra_and_geometry, random
     source = Column(String, nullable=True)  # Original source of the question

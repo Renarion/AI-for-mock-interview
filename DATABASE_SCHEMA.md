@@ -40,7 +40,7 @@
 | `company_tier` | String | NO | — | tier1, tier2 |
 | `employee_level` | String | NO | — | junior, middle, senior |
 | `type` | String | NO | — | product_analyst, data_analyst |
-| `subtype` | String | NO | — | statistics, ab_testing, probability, python, sql, random |
+| `subtype` | String | NO | — | statistics, ab_testing, probability, python, sql, algebra_and_geometry, random |
 | `source` | String | YES | — | Источник вопроса |
 
 ---

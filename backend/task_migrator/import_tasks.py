@@ -7,8 +7,11 @@ Usage:
    python -m task_migrator.import_tasks ~/tasks.xlsx
 
 First row = headers. Map your column names to DB fields below (COLUMN_MAPPING).
-Allowed values: company_tier = tier1|tier2; employee_level = junior|middle|senior;
-  type = product_analyst|data_analyst; subtype = statistics|ab_testing|probability|python|sql|random.
+
+Excel format → DB:
+  employee_level: "Junior", "Middle +" → junior, middle (Senior → senior)
+  type: "Product analyst", "Data analyst" → product_analyst, data_analyst
+  subtype: "AB tests", "Probability theory", "Statistics", "Python", "SQL", "Algebra & Geometry" → ab_testing, probability, statistics, python, sql, random
 """
 import asyncio
 import csv
@@ -33,17 +36,32 @@ COLUMN_MAPPING = {
     "type": "type",
     "subtype": "subtype",
     "source": "source",
-    # Common alternatives (uncomment or add your headers):
-    # "Question": "task_question",
-    # "Answer": "task_answer",
-    # "Tier": "company_tier",
-    # "Level": "employee_level",
-    # "Role": "type",
-    # "Topic": "subtype",
 }
 
 REQUIRED = {"task_question", "company_tier", "employee_level", "type", "subtype"}
 OPTIONAL = {"task_answer", "source"}
+
+# Excel/CSV values (case-insensitive, stripped) → DB values
+EMPLOYEE_LEVEL_MAP = {
+    "junior": "junior",
+    "middle +": "middle",
+    "middle+": "middle",
+    "middle": "middle",
+    "senior": "senior",
+}
+TYPE_MAP = {
+    "product analyst": "product_analyst",
+    "data analyst": "data_analyst",
+}
+SUBTYPE_MAP = {
+    "ab tests": "ab_testing",
+    "probability theory": "probability",
+    "statistics": "statistics",
+    "python": "python",
+    "sql": "sql",
+    "algebra & geometry": "algebra_and_geometry",
+}
+
 
 def _normalize_header(h: str) -> str:
     return (h or "").strip().lower().replace(" ", "_").replace("-", "_")
@@ -110,19 +128,38 @@ def load_rows(path: Path) -> list[dict]:
     raise SystemExit(f"Unsupported format: {suf}. Use .csv or .xlsx")
 
 
+def _normalize_value_for_map(s: str) -> str:
+    """Strip, lower, collapse spaces for map lookup."""
+    return " ".join(str(s or "").strip().lower().split())
+
+
 def normalize_row(row: dict) -> None:
-    """Normalize values for DB: lowercase, underscores, empty -> None."""
+    """Normalize values for DB: map Excel format → DB, empty → None."""
     if "task_answer" in row and (row["task_answer"] or "").strip() == "":
         row["task_answer"] = None
     if "source" in row and (row["source"] or "").strip() == "":
         row["source"] = None
-    for k in ("company_tier", "employee_level", "type", "subtype"):
-        if k in row and row[k]:
-            row[k] = str(row[k]).strip().lower().replace(" ", "_").replace("-", "_")
-    if row.get("company_tier") == "tier_1":
-        row["company_tier"] = "tier1"
-    elif row.get("company_tier") == "tier_2":
-        row["company_tier"] = "tier2"
+    # company_tier: tier1, tier2 (or "Tier 1" → tier1)
+    if row.get("company_tier"):
+        v = _normalize_value_for_map(row["company_tier"]).replace(" ", "_")
+        if v == "tier_1" or v == "tier1":
+            row["company_tier"] = "tier1"
+        elif v == "tier_2" or v == "tier2":
+            row["company_tier"] = "tier2"
+    # employee_level: "Junior", "Middle +" → junior, middle
+    if row.get("employee_level"):
+        v = _normalize_value_for_map(row["employee_level"]).replace("+", " ").strip()
+        row["employee_level"] = EMPLOYEE_LEVEL_MAP.get(v, v.replace(" ", "_"))
+    # type: "Product analyst" → product_analyst
+    if row.get("type"):
+        v = _normalize_value_for_map(row["type"])
+        row["type"] = TYPE_MAP.get(v, v.replace(" ", "_"))
+    # subtype: "AB tests", "Probability theory", ... → ab_testing, probability, ...
+    if row.get("subtype"):
+        v = _normalize_value_for_map(row["subtype"])
+        row["subtype"] = SUBTYPE_MAP.get(v, v.replace(" ", "_").replace("&", "and"))
+        if row["subtype"] == "algebra_and_geometry":
+            row["subtype"] = "random"
 
 
 def validate_row(row: dict, index: int) -> None:

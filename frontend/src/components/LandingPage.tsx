@@ -65,9 +65,7 @@ export default function LandingPage({ isLoading, isSignedIn, onStart, onPayClick
         className="mt-8 max-w-lg text-center px-6"
       >
         <p className="text-white/70 text-lg leading-relaxed">
-          Подготовься к интервью на позицию Data Analyst или Product Analyst 
-          с помощью AI-powered мок-интервью. Получи мгновенный фидбек и 
-          рекомендации для улучшения своих навыков.
+          Подготовься к интервью на позицию Data/Product Analyst с помощью AI-powered мок-интервью. Реши задачу и получи мгновенный фидбек и рекомендации.
         </p>
       </motion.div>
 

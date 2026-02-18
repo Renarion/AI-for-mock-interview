@@ -50,8 +50,8 @@ export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps
   ])
   
   const [companyTiers] = useState<Option[]>([
-    { id: 'tier1', name: 'Tier 1', description: 'Яндекс, VK, Тинькофф, Ozon, Avito и др.' },
-    { id: 'tier2', name: 'Tier 2', description: 'Крупные компании с сильными командами' },
+    { id: 'tier1', name: 'Tier 1' }, // description: 'Яндекс, VK, Тинькофф, Ozon, Avito и др.'
+    { id: 'tier2', name: 'Tier 2' }, // description: 'Крупные компании с сильными командами'
   ])
   
   const [topics] = useState<Option[]>([

@@ -6,8 +6,9 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: mock_interview
+      # Без пароля: подключения по сети контейнеров принимаются без проверки (trust)
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - "5432:5432"
     volumes:
@@ -30,7 +31,7 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/mock_interview
+      - DATABASE_URL=postgresql+asyncpg://postgres@db:5432/mock_interview
       - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
       - DEBUG=${DEBUG:-false}
       - FRONTEND_URL=${FRONTEND_URL:-https://analyticsinterview.live}

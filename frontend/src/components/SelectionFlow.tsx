@@ -13,6 +13,10 @@ interface SelectionFlowProps {
 
 type Step = 'specialization' | 'experience' | 'tier' | 'topic' | 'banner'
 
+// При необходимости вернуть шаг выбора специализации — раскомментировать использование 'specialization' в steps,
+// вернуть currentStep initial в 'specialization', раскомментировать case 'specialization' в handleSelect/getStepTitle/getOptions/getSelectedValue
+const DEFAULT_SPECIALIZATION = 'product_analyst'
+
 interface Option {
   id: string
   name: string
@@ -23,7 +27,7 @@ export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps
   const token = useAuthStore((s) => s.token)
   const { setSelection, setSessionId, setTasks } = useInterviewStore()
   
-  const [currentStep, setCurrentStep] = useState<Step>('specialization')
+  const [currentStep, setCurrentStep] = useState<Step>('experience') // было 'specialization' — шаг выбора product/data analyst отключён
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
@@ -33,16 +37,16 @@ export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps
   const [companyTier, setCompanyTier] = useState<string | null>(null)
   const [topic, setTopic] = useState<string | null>(null)
   
-  // Options from API (cached)
-  const [specializations] = useState<Option[]>([
-    { id: 'product_analyst', name: 'Product Analyst' },
-    { id: 'data_analyst', name: 'Data Analyst' },
-  ])
+  // Options from API (cached). Шаг специализации отключён — при восстановлении раскомментировать шаг в steps и initial currentStep.
+  // const [specializations] = useState<Option[]>([
+  //   { id: 'product_analyst', name: 'Product Analyst' },
+  //   { id: 'data_analyst', name: 'Data Analyst' },
+  // ])
   
   const [experienceLevels] = useState<Option[]>([
     { id: 'junior', name: 'Junior' },
-    { id: 'middle', name: 'Middle' },
-    { id: 'senior', name: 'Senior' },
+    { id: 'middle', name: 'Middle +' },
+    // { id: 'senior', name: 'Senior' }, // кнопка Senior удалена по запросу
   ])
   
   const [companyTiers] = useState<Option[]>([
@@ -57,20 +61,20 @@ export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps
     { id: 'python', name: 'Python' },
     { id: 'sql', name: 'SQL' },
     { id: 'algebra_and_geometry', name: 'Алгебра и геометрия' },
-    { id: 'random', name: 'Рандом (микс тем)' },
+    { id: 'random', name: 'Random' },
   ])
 
-  const steps: Step[] = ['specialization', 'experience', 'tier', 'topic', 'banner']
+  const steps: Step[] = ['experience', 'tier', 'topic', 'banner'] // раньше: ['specialization', 'experience', 'tier', 'topic', 'banner']
   const currentStepIndex = steps.indexOf(currentStep)
 
   const handleSelect = (value: string) => {
     setError(null)
     
     switch (currentStep) {
-      case 'specialization':
-        setSpecialization(value)
-        setCurrentStep('experience')
-        break
+      // case 'specialization':
+      //   setSpecialization(value)
+      //   setCurrentStep('experience')
+      //   break
       case 'experience':
         setExperienceLevel(value)
         setCurrentStep('tier')
@@ -96,7 +100,8 @@ export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps
   }
 
   const handleStartInterview = async () => {
-    if (!specialization || !experienceLevel || !companyTier || !topic) {
+    const effectiveSpecialization = specialization ?? DEFAULT_SPECIALIZATION
+    if (!effectiveSpecialization || !experienceLevel || !companyTier || !topic) {
       setError('Пожалуйста, выберите все параметры')
       return
     }
@@ -110,7 +115,7 @@ export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps
       }
       
       const response = await interviewApi.startInterview(token, {
-        specialization,
+        specialization: effectiveSpecialization,
         experience_level: experienceLevel,
         company_tier: companyTier,
         topic,
@@ -118,7 +123,7 @@ export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps
       
       // Save to store
       setSelection({
-        specialization,
+        specialization: effectiveSpecialization,
         experienceLevel,
         companyTier,
         topic,
@@ -137,8 +142,8 @@ export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps
 
   const getStepTitle = () => {
     switch (currentStep) {
-      case 'specialization':
-        return 'Выберите специализацию'
+      // case 'specialization':
+      //   return 'Выберите специализацию'
       case 'experience':
         return 'Выберите уровень опыта'
       case 'tier':
@@ -152,8 +157,8 @@ export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps
 
   const getOptions = (): Option[] => {
     switch (currentStep) {
-      case 'specialization':
-        return specializations
+      // case 'specialization':
+      //   return specializations
       case 'experience':
         return experienceLevels
       case 'tier':
@@ -167,8 +172,8 @@ export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps
 
   const getSelectedValue = (): string | null => {
     switch (currentStep) {
-      case 'specialization':
-        return specialization
+      // case 'specialization':
+      //   return specialization
       case 'experience':
         return experienceLevel
       case 'tier':

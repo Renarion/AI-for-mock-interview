@@ -77,19 +77,6 @@ export default function Home() {
   return (
     <main className="min-h-screen relative overflow-hidden">
       <div className="fixed inset-0 bg-gradient-radial from-background-elevated via-background to-black z-0" />
-      <div className="fixed inset-0 z-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="particle"
-            style={{
-              left: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 10}s`,
-              animationDuration: `${10 + Math.random() * 10}s`,
-            }}
-          />
-        ))}
-      </div>
 
       {/* Profile icon - top right */}
       <div className="fixed top-4 right-4 z-20">

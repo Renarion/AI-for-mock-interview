@@ -189,7 +189,7 @@ export default function PaymentModal({ onClose, onSuccess }: PaymentModalProps) 
 
             {/* Payment info */}
             <p className="mt-4 text-center text-xs text-white/40">
-              Безопасная оплата через YooKassa. Деньги списываются сразу после подтверждения.
+              Безопасная оплата через YooKassa.
             </p>
           </>
         )}

@@ -1,7 +1,10 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import AnimatedSphere from './AnimatedSphere'
+
+const TELEGRAM_CHANNEL_URL = 'https://t.me/+t2TmjzZcohU5ODli'
 
 interface LandingPageProps {
   isLoading: boolean
@@ -12,6 +15,8 @@ interface LandingPageProps {
 }
 
 export default function LandingPage({ isLoading, isSignedIn, onStart, onPayClick, onStartClick }: LandingPageProps) {
+  const [showAboutModal, setShowAboutModal] = useState(false)
+
   const handleStartClick = () => {
     if (isSignedIn) {
       onStart()
@@ -37,13 +42,14 @@ export default function LandingPage({ isLoading, isSignedIn, onStart, onPayClick
               onClick={handleStartClick}
               className="btn-primary text-white shadow-2xl"
             >
-              Start the interview
+              Начать интервью
             </button>
           </motion.div>
           
-          {/* Learn more link */}
-          <motion.a
-            href="#about"
+          {/* Узнать больше */}
+          <motion.button
+            type="button"
+            onClick={() => setShowAboutModal(true)}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: isLoading ? 2.3 : 0.3, duration: 0.5 }}
@@ -52,8 +58,8 @@ export default function LandingPage({ isLoading, isSignedIn, onStart, onPayClick
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Learn more
-          </motion.a>
+            Узнать больше
+          </motion.button>
         </div>
       </div>
 
@@ -69,6 +75,50 @@ export default function LandingPage({ isLoading, isSignedIn, onStart, onPayClick
         </p>
       </motion.div>
 
+      {/* About modal */}
+      <AnimatePresence>
+        {showAboutModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAboutModal(false)}
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+              aria-hidden
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed left-1/2 top-1/2 z-50 w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-[#12121A]/95 p-6 shadow-2xl backdrop-blur-xl"
+            >
+              <h3 className="text-lg font-semibold text-white mb-4">О проекте</h3>
+              <p className="text-white/80 text-sm leading-relaxed mb-4">
+                Этот проект был создан, чтобы аналитикам было проще готовиться к техническим секциям в тех компаниях. Мы собрали сотни задач с реальных собеседований. Часть из них мы решали в качестве соискателя, часть спрашивали в роли нанимающего менеджера. Под капотом работает обученная специально под проведение мок-интервью GPT-5. Мы будем благодарны фидбеку и подписке в нашем{' '}
+                <a
+                  href={TELEGRAM_CHANNEL_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#8B5CF6] hover:text-[#A78BFA] underline underline-offset-2 transition-colors"
+                >
+                  телеграм-канале
+                </a>
+                .
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowAboutModal(false)}
+                className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors"
+              >
+                Закрыть
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Pay button - fixed at bottom */}
       <motion.button
         initial={{ opacity: 0, y: 20 }}
@@ -82,18 +132,6 @@ export default function LandingPage({ isLoading, isSignedIn, onStart, onPayClick
         </svg>
         Pay
       </motion.button>
-
-      {/* Decorative star in bottom right */}
-      <motion.div
-        initial={{ opacity: 0, rotate: -45 }}
-        animate={{ opacity: 1, rotate: 0 }}
-        transition={{ delay: isLoading ? 3 : 1, duration: 0.5 }}
-        className="fixed bottom-24 right-8"
-      >
-        <svg className="w-6 h-6 text-white/40" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2Z" />
-        </svg>
-      </motion.div>
     </div>
   )
 }

@@ -190,34 +190,6 @@ body {
   }
 }
 
-/* Particle effects */
-.particle {
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  background: white;
-  border-radius: 50%;
-  opacity: 0.6;
-  animation: particle-float 10s linear infinite;
-}
-
-@keyframes particle-float {
-  0% {
-    transform: translateY(0) translateX(0);
-    opacity: 0;
-  }
-  10% {
-    opacity: 0.6;
-  }
-  90% {
-    opacity: 0.6;
-  }
-  100% {
-    transform: translateY(-100vh) translateX(50px);
-    opacity: 0;
-  }
-}
-
 /* Button styles */
 .btn-primary {
   @apply relative overflow-hidden px-8 py-4 rounded-full font-semibold text-lg;

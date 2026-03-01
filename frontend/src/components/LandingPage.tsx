@@ -26,13 +26,13 @@ export default function LandingPage({ isLoading, isSignedIn, onStart, onPayClick
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative">
+    <div className="min-h-screen flex flex-col items-center justify-center relative w-full">
       {/* Sphere container */}
-      <div className="relative">
+      <div className="relative w-full flex flex-col items-center">
         <AnimatedSphere isLoading={isLoading} />
         
         {/* Central button */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+        <div className="absolute inset-0 w-full flex flex-col items-center justify-center z-10">
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}

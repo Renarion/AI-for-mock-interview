@@ -27,7 +27,7 @@ PRICING_PLANS = {
         questions_count=6,
         price=499.0,
         currency="RUB",
-        description="6 вопросов для подготовки",
+        description="",
     ),
     "12_questions": PricingPlan(
         plan_id="12_questions",

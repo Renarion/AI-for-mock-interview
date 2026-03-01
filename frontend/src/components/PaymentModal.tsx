@@ -155,8 +155,8 @@ export default function PaymentModal({ onClose, onSuccess }: PaymentModalProps) 
               })}
             </div>
 
-            {/* Selected plan details */}
-            {selectedPlan && (
+            {/* Selected plan details — only show if plan has description */}
+            {selectedPlan && plans.find((p) => p.plan_id === selectedPlan)?.description && (
               <div className="p-4 rounded-xl bg-white/5 mb-6">
                 {plans.find((p) => p.plan_id === selectedPlan)?.description}
               </div>

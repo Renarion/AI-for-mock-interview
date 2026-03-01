@@ -78,21 +78,20 @@ export default function LandingPage({ isLoading, isSignedIn, onStart, onPayClick
       {/* About modal */}
       <AnimatePresence>
         {showAboutModal && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowAboutModal(false)}
-              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
-              aria-hidden
-            />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowAboutModal(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed left-1/2 top-1/2 z-50 w-[90vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-[#12121A]/95 p-6 shadow-2xl backdrop-blur-xl"
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-2xl border border-white/10 bg-[#12121A]/95 p-6 shadow-2xl backdrop-blur-xl"
             >
               <h3 className="text-lg font-semibold text-white mb-4">О проекте</h3>
               <p className="text-white/80 text-sm leading-relaxed mb-4">
@@ -115,7 +114,7 @@ export default function LandingPage({ isLoading, isSignedIn, onStart, onPayClick
                 Закрыть
               </button>
             </motion.div>
-          </>
+          </motion.div>
         )}
       </AnimatePresence>
 

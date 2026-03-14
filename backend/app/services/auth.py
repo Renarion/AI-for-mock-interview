@@ -88,6 +88,7 @@ class AuthService:
             telegram_username=telegram_username or None,
             password_hash=hash_password(password),
             trial_question_flg=True,
+            trial_questions_left=3,
             paid_questions_number_left=0,
             registration_type="email",
         )
@@ -118,24 +119,28 @@ class AuthService:
 
     async def get_user_status(self, user: User) -> dict:
         """Get user status for frontend."""
-        q = (1 if user.trial_question_flg else 0) + user.paid_questions_number_left
+        trial = getattr(user, 'trial_questions_left', 1 if user.trial_question_flg else 0)
+        q = trial + user.paid_questions_number_left
         if q > 0:
             user_type = "paid" if user.paid_questions_number_left > 0 else "trial"
-        elif user.trial_question_flg:
+        elif trial > 0:
             user_type = "trial"
         else:
             user_type = "expired"
         return {
             "is_authenticated": True,
-            "has_trial": user.trial_question_flg,
+            "has_trial": trial > 0,
             "questions_remaining": q,
             "user_type": user_type,
         }
 
     async def consume_one_question(self, user: User) -> bool:
         """Consume one question (trial first, then paid)."""
-        if user.trial_question_flg:
-            user.trial_question_flg = False
+        trial = getattr(user, 'trial_questions_left', 1 if user.trial_question_flg else 0)
+        if trial > 0:
+            user.trial_questions_left = trial - 1
+            if user.trial_questions_left == 0:
+                user.trial_question_flg = False
             await self.db.flush()
             return True
         if user.paid_questions_number_left > 0:

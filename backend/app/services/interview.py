@@ -32,9 +32,10 @@ class InterviewService:
         """
         Start a new interview session.
         Returns session_id and list of tasks.
-        Each submitted answer consumes 1 question; new users have 1 free.
+        Each submitted answer consumes 1 question; new users have 3 free.
         """
-        questions_left = (1 if user.trial_question_flg else 0) + user.paid_questions_number_left
+        trial = getattr(user, 'trial_questions_left', 1 if user.trial_question_flg else 0)
+        questions_left = trial + user.paid_questions_number_left
         if questions_left <= 0:
             raise ValueError("Нет доступных вопросов. Приобретите пакет вопросов.")
         

@@ -43,14 +43,15 @@ async def require_auth(
 
 
 def _user_response(user) -> UserResponse:
-    q = (1 if user.trial_question_flg else 0) + user.paid_questions_number_left
+    trial = getattr(user, 'trial_questions_left', 1 if user.trial_question_flg else 0)
+    q = trial + user.paid_questions_number_left
     return UserResponse(
         user_id=user.user_id,
         name=user.name,
         email=user.email,
         telegram_username=user.telegram_username,
         created_dttm=user.created_dttm,
-        trial_question_flg=user.trial_question_flg,
+        trial_question_flg=trial > 0,
         paid_questions_number_left=user.paid_questions_number_left,
         questions_remaining=q,
     )
@@ -121,7 +122,8 @@ async def get_me(
     user=Depends(require_auth),
 ):
     """Get current user info for profile (password masked)."""
-    q = (1 if user.trial_question_flg else 0) + user.paid_questions_number_left
+    trial = getattr(user, 'trial_questions_left', 1 if user.trial_question_flg else 0)
+    q = trial + user.paid_questions_number_left
     return UserMeResponse(
         user_id=user.user_id,
         name=user.name,
@@ -129,6 +131,6 @@ async def get_me(
         telegram_username=user.telegram_username,
         password_masked="********",
         questions_remaining=q,
-        trial_question_flg=user.trial_question_flg,
+        trial_question_flg=trial > 0,
         paid_questions_number_left=user.paid_questions_number_left,
     )

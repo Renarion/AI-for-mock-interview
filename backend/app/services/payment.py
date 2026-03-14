@@ -58,12 +58,11 @@ class PaymentService:
     
     def _init_yookassa(self):
         """Initialize YooKassa configuration."""
-        if settings.yookassa_shop_id and settings.yookassa_secret_key:
+        shop_id = (settings.yookassa_shop_id or "").strip()
+        secret_key = (settings.yookassa_secret_key or "").strip()
+        if shop_id and secret_key:
             from yookassa import Configuration
-            Configuration.configure(
-                settings.yookassa_shop_id,
-                settings.yookassa_secret_key,
-            )
+            Configuration.configure(shop_id, secret_key)
     
     def get_pricing_plans(self) -> list[PricingPlan]:
         """Get all available pricing plans."""
@@ -82,9 +81,12 @@ class PaymentService:
 
         return_url = payment_data.return_url or f"{settings.frontend_url}/payment/success"
 
-        if settings.yookassa_shop_id and settings.yookassa_secret_key:
+        shop_id = (settings.yookassa_shop_id or "").strip()
+        secret_key = (settings.yookassa_secret_key or "").strip()
+        if shop_id and secret_key:
             # Create real YooKassa payment
             from yookassa import Payment as YKPayment
+            from requests.exceptions import HTTPError
 
             payload = {
                 "amount": {
@@ -102,7 +104,15 @@ class PaymentService:
                     "plan_id": plan.plan_id,
                 },
             }
-            yookassa_payment = await asyncio.to_thread(YKPayment.create, payload)
+            try:
+                yookassa_payment = await asyncio.to_thread(YKPayment.create, payload)
+            except HTTPError as e:
+                if e.response is not None and e.response.status_code == 401:
+                    raise ValueError(
+                        "ЮKassa вернула 401: проверьте YOOKASSA_SHOP_ID и YOOKASSA_SECRET_KEY в .env "
+                        "(без пробелов и переносов строк). Ключи возьмите в ЛК ЮKassa → Настройки → Ключи API."
+                    ) from e
+                raise ValueError(f"Ошибка ЮKassa: {e}") from e
             payment_id = yookassa_payment.id
             confirmation = getattr(yookassa_payment, "confirmation", None)
             if confirmation is None:

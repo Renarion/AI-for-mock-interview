@@ -1,4 +1,5 @@
 """Payment service using YooKassa."""
+import asyncio
 import uuid
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -57,11 +58,12 @@ class PaymentService:
     
     def _init_yookassa(self):
         """Initialize YooKassa configuration."""
-        # TODO: Initialize YooKassa SDK when credentials are available
-        # from yookassa import Configuration
-        # Configuration.account_id = settings.yookassa_shop_id
-        # Configuration.secret_key = settings.yookassa_secret_key
-        pass
+        if settings.yookassa_shop_id and settings.yookassa_secret_key:
+            from yookassa import Configuration
+            Configuration.configure(
+                settings.yookassa_shop_id,
+                settings.yookassa_secret_key,
+            )
     
     def get_pricing_plans(self) -> list[PricingPlan]:
         """Get all available pricing plans."""
@@ -77,31 +79,43 @@ class PaymentService:
         plan = PRICING_PLANS.get(payment_data.plan_id)
         if not plan:
             raise ValueError("Invalid plan ID")
-        
-        payment_id = str(uuid.uuid4())
-        
-        # TODO: Create actual YooKassa payment
-        # from yookassa import Payment as YKPayment
-        # yookassa_payment = YKPayment.create({
-        #     "amount": {
-        #         "value": str(plan.price),
-        #         "currency": plan.currency
-        #     },
-        #     "confirmation": {
-        #         "type": "redirect",
-        #         "return_url": payment_data.return_url or f"{settings.frontend_url}/payment/success"
-        #     },
-        #     "capture": True,
-        #     "description": f"Mock Interview: {plan.name}",
-        #     "metadata": {
-        #         "user_id": user.user_id,
-        #         "plan_id": plan.plan_id,
-        #     }
-        # })
-        
-        # For development, create a mock payment
-        confirmation_url = f"{settings.frontend_url}/payment/mock?payment_id={payment_id}"
-        
+
+        return_url = payment_data.return_url or f"{settings.frontend_url}/payment/success"
+
+        if settings.yookassa_shop_id and settings.yookassa_secret_key:
+            # Create real YooKassa payment
+            from yookassa import Payment as YKPayment
+
+            payload = {
+                "amount": {
+                    "value": f"{plan.price:.2f}",
+                    "currency": plan.currency,
+                },
+                "confirmation": {
+                    "type": "redirect",
+                    "return_url": return_url,
+                },
+                "capture": True,
+                "description": f"Mock Interview: {plan.name}",
+                "metadata": {
+                    "user_id": str(user.user_id),
+                    "plan_id": plan.plan_id,
+                },
+            }
+            yookassa_payment = await asyncio.to_thread(YKPayment.create, payload)
+            payment_id = yookassa_payment.id
+            confirmation = getattr(yookassa_payment, "confirmation", None)
+            if confirmation is None:
+                confirmation_url = return_url
+            elif isinstance(confirmation, dict):
+                confirmation_url = confirmation.get("confirmation_url") or return_url
+            else:
+                confirmation_url = getattr(confirmation, "confirmation_url", None) or return_url
+        else:
+            # Fallback: mock payment when YooKassa credentials are not set
+            payment_id = str(uuid.uuid4())
+            confirmation_url = f"{settings.frontend_url}/payment/mock?payment_id={payment_id}"
+
         # Save payment record
         payment = Payment(
             user_id=user.user_id,
@@ -115,7 +129,7 @@ class PaymentService:
         )
         self.db.add(payment)
         await self.db.flush()
-        
+
         return PaymentResponse(
             payment_id=payment_id,
             confirmation_url=confirmation_url,

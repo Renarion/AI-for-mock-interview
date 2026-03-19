@@ -28,7 +28,7 @@ PRICING_PLANS = {
         questions_count=50,
         price=250.0,
         currency="RUB",
-        description="50 вопросов - лучшая цена за вопрос",
+        description="",
     ),
 }
 

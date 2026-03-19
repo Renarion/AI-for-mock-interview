@@ -95,7 +95,7 @@ export default function LandingPage({ isLoading, isSignedIn, onStart, onPayClick
             >
               <h3 className="text-lg font-semibold text-white mb-4">О проекте</h3>
               <p className="text-white/80 text-sm leading-relaxed mb-4">
-                Этот проект был создан, чтобы аналитикам было проще готовиться к техническим секциям в тех компаниях. Мы собрали сотни задач с реальных собеседований. Часть из них мы решали в качестве соискателя, часть спрашивали в роли нанимающего менеджера. Под капотом работает обученная специально под проведение мок-интервью GPT-5. Мы будем благодарны фидбеку и подписке в нашем{' '}
+                Сервис для аналитиков, которые готовятся к техническим собеседованиям. Сотни задач с реальных интервью - часть мы проходили сами, часть задавали как нанимающие менеджеры. Под капотом - GPT-5, обученная специально для мок-интервью. Будем рады фидбеку и увидимся в{' '}
                 <a
                   href={TELEGRAM_CHANNEL_URL}
                   target="_blank"
@@ -129,7 +129,7 @@ export default function LandingPage({ isLoading, isSignedIn, onStart, onPayClick
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
         </svg>
-        Pay
+        Оплатить
       </motion.button>
     </div>
   )

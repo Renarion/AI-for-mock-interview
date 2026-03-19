@@ -14,37 +14,21 @@ settings = get_settings()
 
 # Pricing plans
 PRICING_PLANS = {
-    "3_questions": PricingPlan(
-        plan_id="3_questions",
-        name="Starter",
-        questions_count=3,
-        price=299.0,
+    "25_questions": PricingPlan(
+        plan_id="25_questions",
+        name="Basic",
+        questions_count=25,
+        price=100.0,
         currency="RUB",
-        description="3 вопроса для практики",
+        description="25 вопросов для практики",
     ),
-    "6_questions": PricingPlan(
-        plan_id="6_questions",
-        name="Standard",
-        questions_count=6,
-        price=499.0,
-        currency="RUB",
-        description="",
-    ),
-    "12_questions": PricingPlan(
-        plan_id="12_questions",
+    "50_questions": PricingPlan(
+        plan_id="50_questions",
         name="Pro",
-        questions_count=12,
-        price=899.0,
+        questions_count=50,
+        price=250.0,
         currency="RUB",
-        description="12 вопросов для серьёзной подготовки",
-    ),
-    "24_questions": PricingPlan(
-        plan_id="24_questions",
-        name="Ultimate",
-        questions_count=24,
-        price=1499.0,
-        currency="RUB",
-        description="24 вопроса — максимальная подготовка",
+        description="50 вопросов - лучшая цена за вопрос",
     ),
 }
 

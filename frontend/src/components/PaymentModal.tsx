@@ -80,8 +80,8 @@ export default function PaymentModal({ onClose, onSuccess }: PaymentModalProps) 
   }
 
   const getPlanHighlight = (plan: PricingPlan) => {
-    if (plan.plan_id === '6_questions') return 'Популярный'
-    if (plan.plan_id === '24_questions') return 'Лучшая цена'
+    if (plan.plan_id === '25_questions') return 'Популярный'
+    if (plan.plan_id === '50_questions') return 'Лучшая цена'
     return null
   }
 
@@ -120,7 +120,7 @@ export default function PaymentModal({ onClose, onSuccess }: PaymentModalProps) 
         ) : (
           <>
             {/* Plans grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div className="grid grid-cols-2 gap-3 mb-6">
               {plans.map((plan) => {
                 const highlight = getPlanHighlight(plan)
                 const isSelected = selectedPlan === plan.plan_id

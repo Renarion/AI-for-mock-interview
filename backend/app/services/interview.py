@@ -9,7 +9,7 @@ from app.models.task import Task
 from app.models.llm_answer import LLMAnswer
 from app.models.user import User
 from app.schemas.task import TaskSelection, TaskResponse
-from app.schemas.interview import TaskFeedback, InterviewSession
+from app.schemas.interview import TaskFeedback
 from app.services.llm import LLMService
 
 
@@ -65,7 +65,6 @@ class InterviewService:
             ],
             "current_task_index": 0,
             "answers": [],
-            "feedbacks": [],
             "started_at": datetime.utcnow().isoformat(),
             "status": "active",
         }
@@ -147,8 +146,8 @@ class InterviewService:
         task_id: int,
         answer: str,
         user: User,
-    ) -> TaskFeedback:
-        """Submit answer and get feedback."""
+    ) -> None:
+        """Сохранить ответ без LLM; разбор всех задач — при завершении интервью."""
         session = _sessions.get(session_id)
         if not session:
             raise ValueError("Session not found")
@@ -162,30 +161,12 @@ class InterviewService:
         if current_task["task_id"] != task_id:
             raise ValueError("Task ID mismatch")
         
-        # Generate feedback using LLM
-        feedback = await self.llm_service.generate_task_feedback(
-            task_question=current_task["task_question"],
-            task_answer=current_task.get("task_answer"),
-            user_answer=answer,
-            task_type=current_task.get("subtype", "general"),
-        )
-        feedback.task_id = task_id
-        
-        # Store answer and feedback
         session["answers"].append({
             "task_id": task_id,
             "answer": answer,
             "submitted_at": datetime.utcnow().isoformat(),
         })
-        session["feedbacks"].append(feedback.model_dump())
-        
-        # Move to next task
         session["current_task_index"] += 1
-        
-        # Save feedback to database
-        await self._save_feedback(user, task_id, answer, feedback)
-        
-        return feedback
     
     async def _save_feedback(
         self,
@@ -211,28 +192,53 @@ class InterviewService:
         session_id: str,
         user: User,
     ) -> dict:
-        """Finish interview and generate final report."""
+        """Завершить интервью: один вызов LLM по всем ответам, затем итоговый отчёт."""
         session = _sessions.get(session_id)
         if not session:
             raise ValueError("Session not found")
-        
-        session["status"] = "completed"
-        
-        # Convert stored feedbacks back to TaskFeedback objects
-        task_feedbacks = [
-            TaskFeedback(**fb) for fb in session["feedbacks"]
-        ]
-        
-        # Generate final report (questions already consumed per submit_answer)
-        report = await self.llm_service.generate_final_report(
-            task_feedbacks=task_feedbacks,
+
+        if session["status"] == "completed":
+            raise ValueError("Интервью уже завершено")
+
+        if not session.get("answers"):
+            raise ValueError("Нет сохранённых ответов для отчёта")
+
+        tasks_by_id = {t["task_id"]: t for t in session["tasks"]}
+        items: list[dict] = []
+        for ans in session["answers"]:
+            tid = ans["task_id"]
+            t = tasks_by_id.get(tid)
+            if not t:
+                continue
+            items.append(
+                {
+                    "task_id": tid,
+                    "task_question": t["task_question"],
+                    "task_answer": t.get("task_answer"),
+                    "user_answer": ans["answer"],
+                    "subtype": t.get("subtype", "general"),
+                }
+            )
+
+        if not items:
+            raise ValueError("Не удалось сопоставить ответы с задачами")
+
+        task_feedbacks, report = await self.llm_service.generate_full_interview_bundle(
+            items=items,
             selection=session["selection"],
         )
-        
+
+        for fb in task_feedbacks:
+            await self._save_feedback(user, fb.task_id, fb.user_answer, fb)
+
+        session["status"] = "completed"
+
+        feedback_payload = [fb.model_dump() for fb in task_feedbacks]
+
         return {
             "session_id": session_id,
             "overall_score": report.get("overall_score", 0),
-            "task_feedbacks": session["feedbacks"],
+            "task_feedbacks": feedback_payload,
             "overall_strengths": report.get("overall_strengths", []),
             "areas_to_improve": report.get("areas_to_improve", []),
             "study_recommendations": report.get("study_recommendations", []),

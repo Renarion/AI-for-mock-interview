@@ -1,21 +1,22 @@
 """Interview routes."""
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
 
 from app.database import get_db
+from app.llm_config_loader import get_interview_catalog
 from app.routers.auth import require_auth
 from app.services.interview import InterviewService
 from app.services.auth import AuthService
-from app.schemas.task import TaskSelection, TaskResponse
-from app.schemas.interview import (
-    InterviewStart,
-    InterviewAnswer,
-    InterviewFeedback,
-    FinalReport,
-)
+from app.schemas.task import TaskSelection
+from app.schemas.interview import InterviewAnswer
 
 router = APIRouter(prefix="/interview", tags=["Interview"])
+
+
+def _catalog_or(key: str, fallback: list) -> list:
+    cat = get_interview_catalog()
+    val = cat.get(key)
+    return val if isinstance(val, list) and val else fallback
 
 
 @router.post("/start")
@@ -33,7 +34,11 @@ async def start_interview(
         return {
             "session_id": session_id,
             "tasks": [task.model_dump() for task in tasks],
-            "message": "Интервью начинается! У вас будет 3 задачи. На каждую задачу рекомендуется уложиться в 20 минут.",
+            "message": (
+                "Интервью начинается! У вас будет несколько задач (до 3). "
+                "На каждую рекомендуется уложиться в 20 минут. "
+                "Ответы модели вы не увидите между задачами — один общий разбор будет после последнего ответа."
+            ),
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -65,7 +70,7 @@ async def get_session(
         "tasks_completed": completed,
         "tasks_remaining": remaining,
         "can_continue": can_continue,
-        "feedbacks": session.get("feedbacks", []),
+        "feedbacks": [],
     }
 
 
@@ -117,7 +122,7 @@ async def submit_answer(
         raise HTTPException(status_code=403, detail="Access denied")
     
     try:
-        feedback = await interview_service.submit_answer(
+        await interview_service.submit_answer(
             session_id=session_id,
             task_id=answer_data.task_id,
             answer=answer_data.answer,
@@ -130,7 +135,7 @@ async def submit_answer(
         can_continue, completed, remaining = interview_service.can_continue(session_id)
         
         return {
-            "feedback": feedback.model_dump(),
+            "message": "Ответ сохранён. Разбор от модели будет после завершения всех задач интервью.",
             "can_continue": can_continue,
             "tasks_completed": completed,
             "tasks_remaining": remaining,
@@ -164,12 +169,15 @@ async def finish_interview(
 
 @router.get("/specializations")
 async def get_specializations():
-    """Get available specializations."""
+    """Get available specializations (из app/llm_config.yaml → interview_catalog)."""
     return {
-        "specializations": [
-            {"id": "product_analyst", "name": "Product Analyst"},
-            {"id": "data_analyst", "name": "Data Analyst"},
-        ]
+        "specializations": _catalog_or(
+            "specializations",
+            [
+                {"id": "product_analyst", "name": "Product Analyst"},
+                {"id": "data_analyst", "name": "Data Analyst"},
+            ],
+        )
     }
 
 
@@ -177,11 +185,14 @@ async def get_specializations():
 async def get_experience_levels():
     """Get available experience levels."""
     return {
-        "levels": [
-            {"id": "junior", "name": "Junior"},
-            {"id": "middle", "name": "Middle"},
-            {"id": "senior", "name": "Senior"},
-        ]
+        "levels": _catalog_or(
+            "experience_levels",
+            [
+                {"id": "junior", "name": "Junior"},
+                {"id": "middle", "name": "Middle"},
+                {"id": "senior", "name": "Senior"},
+            ],
+        )
     }
 
 
@@ -189,18 +200,21 @@ async def get_experience_levels():
 async def get_company_tiers():
     """Get available company tiers."""
     return {
-        "tiers": [
-            {
-                "id": "tier1", 
-                "name": "Tier 1",
-                "description": "Яндекс, VK, Тинькофф, Ozon, Avito и др."
-            },
-            {
-                "id": "tier2", 
-                "name": "Tier 2",
-                "description": "Крупные компании с сильными командами"
-            },
-        ]
+        "tiers": _catalog_or(
+            "company_tiers",
+            [
+                {
+                    "id": "tier1",
+                    "name": "Tier 1",
+                    "description": "Яндекс, VK, Тинькофф, Ozon, Avito и др.",
+                },
+                {
+                    "id": "tier2",
+                    "name": "Tier 2",
+                    "description": "Крупные компании с сильными командами",
+                },
+            ],
+        )
     }
 
 
@@ -208,12 +222,15 @@ async def get_company_tiers():
 async def get_topics():
     """Get available interview topics."""
     return {
-        "topics": [
-            {"id": "statistics", "name": "Статистика"},
-            {"id": "ab_testing", "name": "A/B тестирование"},
-            {"id": "probability", "name": "Теория вероятностей"},
-            {"id": "python", "name": "Python"},
-            {"id": "sql", "name": "SQL"},
-            {"id": "random", "name": "Рандом (микс тем)"},
-        ]
+        "topics": _catalog_or(
+            "topics",
+            [
+                {"id": "statistics", "name": "Статистика"},
+                {"id": "ab_testing", "name": "A/B тестирование"},
+                {"id": "probability", "name": "Теория вероятностей"},
+                {"id": "python", "name": "Python"},
+                {"id": "sql", "name": "SQL"},
+                {"id": "random", "name": "Рандом (микс тем)"},
+            ],
+        )
     }

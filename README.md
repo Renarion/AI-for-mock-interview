@@ -7,7 +7,7 @@ AI-powered mock interview platform for Data Analyst and Product Analyst position
 - **Animated Landing Page** - Beautiful pulsating sphere animation inspired by AI/futuristic themes
 - **Custom Authentication** - Registration and login by email or Telegram nickname + password (no external providers, works without VPN)
 - **Interview Selection** - Choose specialization, experience level, company tier, and topic
-- **AI-Powered Feedback** - Get detailed feedback on your answers from LLM (OpenAI/Anthropic)
+- **AI-Powered Feedback** - After all session questions, one consolidated report from the LLM (OpenAI/Anthropic); prompts and models are configured in `backend/app/llm_config.yaml`
 - **Final Reports** - Comprehensive analysis with study recommendations
 - **Payment Integration** - YooKassa integration for purchasing question packs
 
@@ -37,7 +37,9 @@ AI-powered mock interview platform for Data Analyst and Product Analyst position
 │   │   ├── routers/        # API routes
 │   │   ├── schemas/        # Pydantic schemas
 │   │   ├── services/       # Business logic
-│   │   ├── config.py       # Settings
+│   │   ├── llm_config.yaml # LLM: модели, температура, промпты, роли/темы для API
+│   │   ├── llm_config_loader.py
+│   │   ├── config.py       # Settings (.env: БД, секреты, опционально LLM_PROVIDER)
 │   │   ├── database.py     # DB connection
 │   │   └── main.py         # FastAPI app
 │   ├── alembic/            # Database migrations
@@ -67,7 +69,7 @@ AI-powered mock interview platform for Data Analyst and Product Analyst position
 
 ### Environment Variables
 
-Create three files (examples are provided in the repo):
+Create these files (examples are provided in the repo):
 
 1. **Project root `.env`** — copy `.env.example`
    ```env
@@ -83,7 +85,7 @@ Create three files (examples are provided in the repo):
    SECRET_KEY=change-me-in-production
    OPENAI_API_KEY=sk-xxxxx
    # or ANTHROPIC_API_KEY=sk-ant-xxxxx
-   LLM_PROVIDER=openai
+   # LLM_PROVIDER=openai   # опционально; если не задан — берётся из app/llm_config.yaml
    YOOKASSA_SHOP_ID=xxxxx
    YOOKASSA_SECRET_KEY=xxxxx
    DEBUG=false
@@ -91,7 +93,14 @@ Create three files (examples are provided in the repo):
    ```
    > For local development without Docker set the host in `DATABASE_URL` to `localhost`.
 
-3. **`frontend/.env.local`** (for local dev)
+3. **LLM-настройки** — файл `backend/app/llm_config.yaml`:
+   - `provider`, `models.openai` / `models.anthropic`
+   - `temperature.full_interview`, `max_tokens.*`
+   - `prompts.full_interview_system` — системный промпт для единого разбора после всех ответов
+   - `interview_catalog` — специализации, уровни, tier компаний, темы (отдаются эндпоинтами `/interview/*`)
+   - `secrets`: можно указать ключ прямо в YAML **только для локальных тестов** (не коммитьте); иначе используйте `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` в `backend/.env` (имена переменных настраиваются в секции `secrets` YAML).
+
+4. **`frontend/.env.local`** (for local dev)
    ```env
    NEXT_PUBLIC_API_URL=http://localhost:8000
    ```
@@ -148,10 +157,9 @@ npm run dev
 1. **Landing** - User sees animated sphere, clicks "Start the interview"
 2. **Auth** - If not logged in, a modal opens: login (email or Telegram + password) or register (name, email, optional Telegram, password)
 3. **Selection** - Choose specialization → experience level → company tier → topic
-4. **Interview** - Answer 3 questions with 20-minute timer each
-5. **Feedback** - Get AI-powered feedback after each answer
-6. **Report** - View final report with scores and recommendations
-7. **Payment** - If no questions left, purchase more via YooKassa
+4. **Interview** - Answer up to 3 questions with a 20-minute timer each; no AI messages between questions
+5. **Report** - After the last answer, one LLM call produces per-task feedback plus overall score and recommendations
+6. **Payment** - If no questions left, purchase more via YooKassa
 
 ## 🎨 Design
 
@@ -176,7 +184,7 @@ Key components:
 ### Interview
 - `POST /interview/start` - Start new interview session
 - `GET /interview/session/{id}` - Get session state
-- `POST /interview/session/{id}/answer` - Submit answer
+- `POST /interview/session/{id}/answer` - Submit answer (сохранение без LLM; фидбек — на `/finish`)
 - `POST /interview/session/{id}/finish` - Finish and get report
 
 ### Payment

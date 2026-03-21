@@ -1,195 +1,183 @@
-"""LLM service for generating feedback."""
+"""LLM service: один вызов в конце интервью; настройки из llm_config.yaml."""
 import json
-from typing import Optional
-from openai import AsyncOpenAI
+import re
+from typing import Any
+
 from anthropic import AsyncAnthropic
+from openai import AsyncOpenAI
 
-from app.config import get_settings
-from app.schemas.interview import TaskFeedback, FinalReport
-
-settings = get_settings()
+from app.llm_config_loader import (
+    effective_llm_provider,
+    get_anthropic_model,
+    get_full_interview_system_prompt,
+    get_full_interview_temperature,
+    get_max_tokens_anthropic_full_interview,
+    get_max_tokens_openai_full_interview,
+    get_openai_model,
+    resolve_anthropic_api_key,
+    resolve_openai_api_key,
+)
+from app.schemas.interview import TaskFeedback
 
 
 class LLMService:
-    """Service for LLM-based feedback generation."""
-    
-    def __init__(self):
-        if settings.llm_provider == "openai":
-            self.openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
+    """Генерация полного фидбека по всем ответам одним запросом к LLM."""
+
+    def __init__(self) -> None:
+        self._provider = effective_llm_provider()
+        if self._provider == "openai":
+            key = resolve_openai_api_key()
+            self.openai_client = AsyncOpenAI(api_key=key) if key else None
             self.anthropic_client = None
         else:
+            key = resolve_anthropic_api_key()
             self.openai_client = None
-            self.anthropic_client = AsyncAnthropic(api_key=settings.anthropic_api_key)
-    
-    async def generate_task_feedback(
+            self.anthropic_client = AsyncAnthropic(api_key=key) if key else None
+
+    def _missing_key_message(self) -> str:
+        if self._provider == "openai":
+            return (
+                "Не задан API-ключ OpenAI. Укажите OPENAI_API_KEY в backend/.env "
+                "или secrets.openai_api_key в app/llm_config.yaml (только для локальной разработки)."
+            )
+        return (
+            "Не задан API-ключ Anthropic. Укажите ANTHROPIC_API_KEY в backend/.env "
+            "или secrets.anthropic_api_key в app/llm_config.yaml (только для локальной разработки)."
+        )
+
+    async def generate_full_interview_bundle(
         self,
-        task_question: str,
-        task_answer: Optional[str],  # Reference answer
-        user_answer: str,
-        task_type: str,
-    ) -> TaskFeedback:
+        items: list[dict[str, Any]],
+        selection: dict,
+    ) -> tuple[list[TaskFeedback], dict[str, Any]]:
         """
-        Generate detailed feedback for a single task answer.
+        items: каждый элемент — task_id, task_question, task_answer (опц.), user_answer, subtype.
+        Возвращает (список TaskFeedback, поля итогового отчёта для JSON ответа).
         """
-        system_prompt = """Ты — эксперт по проведению технических интервью для Data Analyst и Product Analyst позиций в крупных российских технологических компаниях.
+        system_prompt = get_full_interview_system_prompt()
+        temperature = get_full_interview_temperature()
 
-Твоя задача — дать развёрнутую и конструктивную оценку ответа кандидата на вопрос интервью.
+        blocks = []
+        for i, it in enumerate(items, start=1):
+            ref = it.get("task_answer")
+            ref_line = f"\nЭталонный ответ (для контекста):\n{ref}" if ref else ""
+            blocks.append(
+                f"--- Задача {i} (тип: {it.get('subtype', 'general')}) ---\n"
+                f"Вопрос:\n{it.get('task_question', '')}\n"
+                f"{ref_line}\n\n"
+                f"Ответ кандидата:\n{it.get('user_answer', '')}\n"
+            )
+        user_prompt = (
+            f"Параметры интервью:\n"
+            f"- Специализация: {selection.get('specialization', 'не указано')}\n"
+            f"- Уровень: {selection.get('experience_level', 'не указано')}\n"
+            f"- Tier компании: {selection.get('company_tier', 'не указано')}\n"
+            f"- Тема: {selection.get('topic', 'не указано')}\n\n"
+            f"Всего задач: {len(items)}. Верни JSON с ровно {len(items)} элементами в task_feedbacks.\n\n"
+            + "\n".join(blocks)
+        )
 
-Формат ответа (JSON):
-{
-    "score": число от 0 до 100,
-    "strengths": ["сильная сторона 1", "сильная сторона 2"],
-    "improvements": ["что можно улучшить 1", "что можно улучшить 2"],
-    "detailed_feedback": "Развёрнутый комментарий с анализом ответа, указанием на правильные и неправильные аспекты, рекомендациями по улучшению"
-}
-
-Оценивай по следующим критериям:
-- Правильность и полнота ответа
-- Структурированность изложения
-- Практическая применимость
-- Знание теории и терминологии"""
-
-        user_prompt = f"""Вопрос интервью (тип: {task_type}):
-{task_question}
-
-{"Эталонный ответ для контекста: " + task_answer if task_answer else ""}
-
-Ответ кандидата:
-{user_answer}
-
-Дай оценку ответа кандидата в указанном JSON формате."""
-
-        try:
-            if settings.llm_provider == "openai":
+        if self._provider == "openai":
+            if not self.openai_client:
+                return self._fallback_bundle(items, self._missing_key_message())
+            try:
                 response = await self.openai_client.chat.completions.create(
-                    model="gpt-4-turbo-preview",
+                    model=get_openai_model(),
                     messages=[
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
+                        {"role": "user", "content": user_prompt},
                     ],
                     response_format={"type": "json_object"},
-                    temperature=0.7,
+                    temperature=temperature,
+                    max_tokens=get_max_tokens_openai_full_interview(),
                 )
-                result = json.loads(response.choices[0].message.content)
-            else:
+                raw = response.choices[0].message.content
+                result = json.loads(raw or "{}")
+            except Exception as e:
+                return self._fallback_bundle(items, str(e))
+        else:
+            if not self.anthropic_client:
+                return self._fallback_bundle(items, self._missing_key_message())
+            try:
                 response = await self.anthropic_client.messages.create(
-                    model="claude-3-sonnet-20240229",
-                    max_tokens=2000,
+                    model=get_anthropic_model(),
+                    max_tokens=get_max_tokens_anthropic_full_interview(),
                     system=system_prompt,
-                    messages=[
-                        {"role": "user", "content": user_prompt}
-                    ]
+                    messages=[{"role": "user", "content": user_prompt}],
                 )
-                # Parse JSON from Claude's response
                 content = response.content[0].text
-                # Try to extract JSON from response
-                import re
-                json_match = re.search(r'\{[\s\S]*\}', content)
-                if json_match:
-                    result = json.loads(json_match.group())
-                else:
+                json_match = re.search(r"\{[\s\S]*\}", content)
+                if not json_match:
                     raise ValueError("No JSON found in response")
-            
-            return TaskFeedback(
-                task_id=0,  # Will be set by caller
-                task_question=task_question,
-                user_answer=user_answer,
-                score=result.get("score", 50),
-                strengths=result.get("strengths", []),
-                improvements=result.get("improvements", []),
-                detailed_feedback=result.get("detailed_feedback", ""),
+                result = json.loads(json_match.group())
+            except Exception as e:
+                return self._fallback_bundle(items, str(e))
+
+        return self._normalize_bundle(items, result)
+
+    def _normalize_bundle(
+        self,
+        items: list[dict[str, Any]],
+        result: dict,
+    ) -> tuple[list[TaskFeedback], dict[str, Any]]:
+        raw_list = result.get("task_feedbacks") or []
+        feedbacks: list[TaskFeedback] = []
+        for i, it in enumerate(items):
+            block = raw_list[i] if i < len(raw_list) and isinstance(raw_list[i], dict) else {}
+            feedbacks.append(
+                TaskFeedback(
+                    task_id=int(it["task_id"]),
+                    task_question=str(it.get("task_question", "")),
+                    user_answer=str(it.get("user_answer", "")),
+                    score=int(block.get("score", 0)),
+                    strengths=list(block.get("strengths") or []),
+                    improvements=list(block.get("improvements") or []),
+                    detailed_feedback=str(
+                        block.get("detailed_feedback")
+                        or "Нет детального комментария в ответе модели."
+                    ),
+                )
             )
-            
-        except Exception as e:
-            # Return a fallback feedback on error
-            return TaskFeedback(
-                task_id=0,
-                task_question=task_question,
-                user_answer=user_answer,
+        report = {
+            "overall_score": int(result.get("overall_score", 0)),
+            "overall_strengths": list(result.get("overall_strengths") or []),
+            "areas_to_improve": list(result.get("areas_to_improve") or []),
+            "study_recommendations": list(result.get("study_recommendations") or []),
+            "motivational_message": str(result.get("motivational_message") or ""),
+        }
+        if not report["overall_strengths"]:
+            report["overall_strengths"] = ["Вы завершили интервью — это уже шаг вперёд."]
+        if not report["areas_to_improve"]:
+            report["areas_to_improve"] = ["Продолжайте практиковаться на новых задачах."]
+        if not report["study_recommendations"]:
+            report["study_recommendations"] = ["Повторите темы, где были заминки."]
+        if not report["motivational_message"]:
+            report["motivational_message"] = "Спасибо за участие. Анализируйте разбор и пробуйте снова."
+        return feedbacks, report
+
+    def _fallback_bundle(
+        self,
+        items: list[dict[str, Any]],
+        error_text: str,
+    ) -> tuple[list[TaskFeedback], dict[str, Any]]:
+        feedbacks = [
+            TaskFeedback(
+                task_id=int(it["task_id"]),
+                task_question=str(it.get("task_question", "")),
+                user_answer=str(it.get("user_answer", "")),
                 score=0,
                 strengths=[],
-                improvements=["Произошла ошибка при генерации фидбека"],
-                detailed_feedback=f"Ошибка: {str(e)}. Попробуйте ещё раз.",
+                improvements=["Не удалось получить оценку от модели"],
+                detailed_feedback=f"Ошибка LLM: {error_text}",
             )
-    
-    async def generate_final_report(
-        self,
-        task_feedbacks: list[TaskFeedback],
-        selection: dict,
-    ) -> dict:
-        """
-        Generate final interview report with recommendations.
-        """
-        system_prompt = """Ты — эксперт по карьерному развитию в сфере Data и Product Analytics.
-
-На основе результатов прохождения мок-интервью тебе нужно:
-1. Дать общую оценку кандидата
-2. Выделить общие сильные стороны
-3. Определить области для улучшения
-4. Дать конкретные рекомендации по обучению
-5. Написать мотивирующее сообщение
-
-Формат ответа (JSON):
-{
-    "overall_score": число от 0 до 100,
-    "overall_strengths": ["сильная сторона 1", "сильная сторона 2"],
-    "areas_to_improve": ["область 1", "область 2"],
-    "study_recommendations": ["рекомендация 1", "рекомендация 2", "рекомендация 3"],
-    "motivational_message": "Мотивирующее сообщение для кандидата"
-}"""
-
-        feedbacks_text = "\n\n".join([
-            f"Задача {i+1} (оценка: {fb.score}/100):\n- Сильные стороны: {', '.join(fb.strengths)}\n- Нужно улучшить: {', '.join(fb.improvements)}"
-            for i, fb in enumerate(task_feedbacks)
-        ])
-        
-        user_prompt = f"""Профиль интервью:
-- Специализация: {selection.get('specialization', 'не указано')}
-- Уровень: {selection.get('experience_level', 'не указано')}
-- Tier компании: {selection.get('company_tier', 'не указано')}
-- Тема: {selection.get('topic', 'не указано')}
-
-Результаты по задачам:
-{feedbacks_text}
-
-Сформируй итоговый отчёт в JSON формате."""
-
-        try:
-            if settings.llm_provider == "openai":
-                response = await self.openai_client.chat.completions.create(
-                    model="gpt-4-turbo-preview",
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    response_format={"type": "json_object"},
-                    temperature=0.7,
-                )
-                result = json.loads(response.choices[0].message.content)
-            else:
-                response = await self.anthropic_client.messages.create(
-                    model="claude-3-sonnet-20240229",
-                    max_tokens=2000,
-                    system=system_prompt,
-                    messages=[
-                        {"role": "user", "content": user_prompt}
-                    ]
-                )
-                content = response.content[0].text
-                import re
-                json_match = re.search(r'\{[\s\S]*\}', content)
-                if json_match:
-                    result = json.loads(json_match.group())
-                else:
-                    raise ValueError("No JSON found in response")
-            
-            return result
-            
-        except Exception as e:
-            return {
-                "overall_score": sum(fb.score for fb in task_feedbacks) // len(task_feedbacks) if task_feedbacks else 0,
-                "overall_strengths": ["Вы прошли интервью до конца!"],
-                "areas_to_improve": ["Попробуйте пройти ещё раз для лучшего результата"],
-                "study_recommendations": ["Продолжайте практиковаться"],
-                "motivational_message": f"Произошла ошибка при генерации отчёта: {str(e)}. Но главное — вы практикуетесь, и это уже отлично!",
-            }
+            for it in items
+        ]
+        avg = 0
+        report = {
+            "overall_score": avg,
+            "overall_strengths": ["Вы дошли до конца интервью."],
+            "areas_to_improve": ["Проверьте настройку API-ключа и модели в app/llm_config.yaml и backend/.env"],
+            "study_recommendations": ["Настройте LLM и пройдите интервью ещё раз."],
+            "motivational_message": f"Не удалось сгенерировать отчёт: {error_text}",
+        }
+        return feedbacks, report

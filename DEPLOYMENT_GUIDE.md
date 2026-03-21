@@ -206,7 +206,7 @@ nano backend/.env
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/mock_interview
 SECRET_KEY=сгенерируй-случайную-строку-минимум-32-символа
 OPENAI_API_KEY=sk-ТВОЙ_OPENAI_КЛЮЧ
-LLM_PROVIDER=openai
+# LLM_PROVIDER=openai   # опционально; модель/промпт/температура — в backend/app/llm_config.yaml
 YOOKASSA_SHOP_ID=ТВОЙ_SHOP_ID
 YOOKASSA_SECRET_KEY=ТВОЙ_СЕКРЕТНЫЙ_КЛЮЧ
 DEBUG=false
@@ -214,7 +214,8 @@ FRONTEND_URL=https://твой-домен.com
 ```
 
 > **SECRET_KEY** — обязателен для JWT (регистрация/логин). Сгенерировать: `openssl rand -hex 32`  
-> **OpenAI:** пошаговый гайд — в файле **[KEYS_SETUP_GUIDE.md](KEYS_SETUP_GUIDE.md)**.
+> **OpenAI:** пошаговый гайд — в **[KEYS_SETUP_GUIDE.md](KEYS_SETUP_GUIDE.md)**.  
+> **LLM:** гиперпараметры и промпты — в **`backend/app/llm_config.yaml`** (см. README и KEYS_SETUP_GUIDE).
 
 **Создай файл `frontend/.env.local`:**
 
@@ -523,7 +524,9 @@ AI-for-mock-interview/
 |------|----------|
 | `__init__.py` | Пустой файл, делает папку Python-пакетом |
 | `main.py` | **Точка входа FastAPI приложения**. Создаёт приложение, настраивает CORS, подключает роутеры |
-| `config.py` | **Конфигурация приложения**. Загружает переменные окружения (API ключи, URL базы данных и т.д.) |
+| `config.py` | **Конфигурация приложения**. Загружает переменные окружения (БД, секреты, опционально ключи LLM) |
+| `llm_config.yaml` | **Настройки LLM**: модели, температура, max_tokens, системный промпт, справочник ролей/тем для API |
+| `llm_config_loader.py` | Чтение `llm_config.yaml`, разрешение провайдера и ключей |
 | `database.py` | **Подключение к базе данных**. Создаёт асинхронное соединение с PostgreSQL |
 
 #### Папка `/backend/app/models/` — Модели базы данных (SQLAlchemy)
@@ -540,7 +543,7 @@ AI-for-mock-interview/
 | Файл | Описание |
 |------|----------|
 | `auth.py` | **Авторизация**: `/auth/register`, `/auth/login`, `/auth/status`, `/auth/me`. Своя JWT-логика (email/Telegram + пароль) |
-| `interview.py` | **Интервью**: `/interview/start`, `/interview/session/{id}`, `/interview/answer`. Логика прохождения интервью |
+| `interview.py` | **Интервью**: старт сессии, ответы (без LLM), `/finish` — один вызов LLM и итоговый отчёт |
 | `payment.py` | **Платежи**: `/payment/plans`, `/payment/create`, `/payment/webhook`. Интеграция с YooKassa |
 
 #### Папка `/backend/app/schemas/` — Pydantic схемы (валидация данных)
@@ -558,7 +561,7 @@ AI-for-mock-interview/
 |------|----------|
 | `auth.py` | Логика авторизации: регистрация/вход, хеширование паролей, выдача JWT |
 | `interview.py` | **Основная логика интервью**: создание сессий, выдача задач, обработка ответов |
-| `llm.py` | **Работа с LLM (OpenAI/Anthropic)**: генерация фидбека на ответы, итоговый отчёт |
+| `llm.py` | **LLM (OpenAI/Anthropic)**: один запрос в конце сессии — разбор по всем задачам + итог (настройки из `llm_config.yaml`) |
 | `payment.py` | Логика платежей: создание платежа в YooKassa, обработка webhook |
 
 #### Папка `/backend/task_migrator/` — Утилиты

@@ -29,7 +29,6 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
     currentTaskIndex,
     setCurrentTaskIndex,
     addAnswer,
-    addFeedback,
     setFinalReport,
   } = useInterviewStore()
   
@@ -39,7 +38,6 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
   const [error, setError] = useState<string | null>(null)
   const [startTime, setStartTime] = useState<number>(Date.now())
   const [elapsedTime, setElapsedTime] = useState(0)
-  const [showFinishConfirm, setShowFinishConfirm] = useState(false)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -53,7 +51,7 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
       const welcomeMessage: ChatMessage = {
         id: 'welcome',
         type: 'system',
-        content: `Добро пожаловать на мок-интервью! 🎯\n\nВам предстоит решить ${tasks.length} задачи. Постарайтесь уложиться в ${TIME_LIMIT_MINUTES} минут на каждую. Пишите кратко и по существу.`,
+        content: `Добро пожаловать на мок-интервью! 🎯\n\nВам предстоит решить ${tasks.length} ${tasks.length === 1 ? 'задачу' : tasks.length < 5 ? 'задачи' : 'задач'}. Постарайтесь уложиться в ${TIME_LIMIT_MINUTES} минут на каждую. Между задачами ответов от ИИ не будет — один общий разбор вы получите после последнего ответа.`,
       }
       
       const taskMessage: ChatMessage = {
@@ -110,7 +108,7 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
     const loadingMessage: ChatMessage = {
       id: 'loading',
       type: 'loading',
-      content: 'Анализируем ваш ответ...',
+      content: 'Сохраняем ответ...',
     }
     
     setMessages((prev) => [...prev, userMessage, loadingMessage])
@@ -128,33 +126,33 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
       
       // Save to store
       addAnswer(currentTask.task_id, inputValue)
-      addFeedback(response.feedback)
       
-      // Remove loading and add feedback message
-      const feedbackMessage: ChatMessage = {
-        id: `feedback-${currentTask.task_id}`,
-        type: 'feedback',
-        content: response.feedback.detailed_feedback,
-        feedback: response.feedback,
-        taskNumber: currentTaskIndex + 1,
-      }
-      
-      setMessages((prev) => prev.filter((m) => m.id !== 'loading').concat(feedbackMessage))
+      setMessages((prev) => prev.filter((m) => m.id !== 'loading'))
       
       useAuthStore.getState().fetchUser()
       
       if (response.can_continue && response.tasks_remaining > 0) {
-        // Show continue options
-        const optionsMessage: ChatMessage = {
-          id: `options-${Date.now()}`,
-          type: 'system',
-          content: `Отлично! Осталось ещё ${response.tasks_remaining} ${response.tasks_remaining === 1 ? 'задача' : 'задачи'}.\n\nВы можете продолжить или завершить интервью сейчас и получить финальный фидбек.`,
+        const nextIndex = currentTaskIndex + 1
+        setCurrentTaskIndex(nextIndex)
+        const nextTask = tasks[nextIndex]
+        const taskMessage: ChatMessage = {
+          id: `task-${nextTask.task_id}`,
+          type: 'task',
+          content: nextTask.task_question,
+          taskNumber: nextIndex + 1,
         }
-        setMessages((prev) => [...prev, optionsMessage])
-        setShowFinishConfirm(true)
+        setMessages((prev) => [...prev, taskMessage])
+        setStartTime(Date.now())
+        setElapsedTime(0)
       } else {
-        // All tasks completed, auto-finish
+        const finalLoading: ChatMessage = {
+          id: 'final-loading',
+          type: 'loading',
+          content: 'Готовим развёрнутый фидбек по всем задачам...',
+        }
+        setMessages((prev) => [...prev, finalLoading])
         await handleFinishInterview()
+        setMessages((prev) => prev.filter((m) => m.id !== 'final-loading'))
       }
     } catch (err) {
       console.error('Failed to submit answer:', err)
@@ -162,26 +160,6 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
       setError(err instanceof Error ? err.message : 'Произошла ошибка. Попробуйте ещё раз.')
     } finally {
       setIsSubmitting(false)
-    }
-  }
-
-  const handleContinue = () => {
-    const nextIndex = currentTaskIndex + 1
-    if (nextIndex < tasks.length) {
-      setCurrentTaskIndex(nextIndex)
-      
-      const nextTask = tasks[nextIndex]
-      const taskMessage: ChatMessage = {
-        id: `task-${nextTask.task_id}`,
-        type: 'task',
-        content: nextTask.task_question,
-        taskNumber: nextIndex + 1,
-      }
-      
-      setMessages((prev) => [...prev, taskMessage])
-      setStartTime(Date.now())
-      setElapsedTime(0)
-      setShowFinishConfirm(false)
     }
   }
 
@@ -336,29 +314,8 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
         </div>
       </main>
 
-      {/* Continue/Finish buttons */}
-      {showFinishConfirm && !isSubmitting && (
-        <div className="fixed bottom-24 left-0 right-0 px-4 z-20">
-          <div className="max-w-4xl mx-auto flex gap-3 justify-center">
-            <button
-              onClick={handleContinue}
-              className="px-6 py-3 rounded-xl glass hover:bg-white/10 transition-colors"
-            >
-              Продолжить →
-            </button>
-            <button
-              onClick={handleFinishInterview}
-              className="px-6 py-3 rounded-xl bg-primary/20 hover:bg-primary/30 transition-colors border border-primary/50"
-            >
-              Завершить и получить фидбек
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Input area */}
-      {!showFinishConfirm && (
-        <footer className="fixed bottom-0 left-0 right-0 z-20 glass border-t border-white/10">
+      <footer className="fixed bottom-0 left-0 right-0 z-20 glass border-t border-white/10">
           <div className="max-w-4xl mx-auto p-4">
             {error && (
               <div className="mb-3 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-200 text-sm flex items-center justify-between">
@@ -405,11 +362,10 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
             </div>
             
             <p className="mt-2 text-xs text-white/40 text-center">
-              💡 Совет: отвечайте кратко и структурированно. Качество важнее количества.
+              💡 Совет: отвечайте кратко и структурированно. Разбор от модели — после всех задач.
             </p>
           </div>
-        </footer>
-      )}
+      </footer>
     </div>
   )
 }

@@ -15,10 +15,11 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "postgresql+asyncpg://user:password@localhost:5432/mock_interview"
     
-    # LLM API
+    # LLM API (модели, промпты, температура — в app/llm_config.yaml)
     openai_api_key: str = ""
     anthropic_api_key: str = ""
-    llm_provider: str = "openai"  # openai or anthropic
+    # Если не задано в .env, провайдер берётся из llm_config.yaml (см. app/llm_config_loader.py)
+    llm_provider: str = ""
     
     # YooKassa Payment
     yookassa_shop_id: str = ""

@@ -161,15 +161,7 @@ export const interviewApi = {
     }
   ) =>
     apiRequest<{
-      feedback: {
-        task_id: number
-        task_question: string
-        user_answer: string
-        score: number
-        strengths: string[]
-        improvements: string[]
-        detailed_feedback: string
-      }
+      message: string
       can_continue: boolean
       tasks_completed: number
       tasks_remaining: number

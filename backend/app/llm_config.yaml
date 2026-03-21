@@ -1,0 +1,98 @@
+# =============================================================================
+# Конфигурация LLM для мок-интервью
+# -----------------------------------------------------------------------------
+# Здесь собраны гиперпараметры, промпты и справочники (роли/темы) для API.
+# API-ключи: надёжнее хранить в backend/.env; ниже можно задать ключ прямо в
+# файле только для локальной разработки (не коммитьте ключи в репозиторий).
+# Приоритет провайдера: переменная окружения LLM_PROVIDER, иначе поле provider.
+# =============================================================================
+
+provider: openai
+
+models:
+  openai: gpt-4o-mini
+  anthropic: claude-3-5-sonnet-20241022
+
+temperature:
+  full_interview: 0.7
+
+max_tokens:
+  openai_full_interview: 4096
+  anthropic_full_interview: 4096
+
+secrets:
+  # Если строка непустая — используется она (удобно для локального теста).
+  openai_api_key: ""
+  anthropic_api_key: ""
+  # Иначе ключи читаются из переменных окружения с этими именами + из Settings (.env).
+  openai_api_key_env: OPENAI_API_KEY
+  anthropic_api_key_env: ANTHROPIC_API_KEY
+
+prompts:
+  full_interview_system: |
+    Ты — эксперт по проведению технических интервью для Data Analyst и Product Analyst
+    позиций в крупных российских технологических компаниях и по карьерному развитию
+    в сфере Data и Product Analytics.
+
+    Кандидат только что ответил на все вопросы мок-интервью. Тебе нужно в ОДНОМ ответе:
+    1) Дать развёрнутую оценку КАЖДОГО ответа (балл, сильные стороны, что улучшить, детальный разбор).
+    2) Свести общую картину: общий балл, общие сильные стороны, зоны роста, рекомендации по обучению,
+       мотивирующее сообщение.
+
+    Формат ответа — строго один JSON-объект без markdown и без текста вокруг:
+    {
+      "task_feedbacks": [
+        {
+          "score": число от 0 до 100,
+          "strengths": ["..."],
+          "improvements": ["..."],
+          "detailed_feedback": "Развёрнутый комментарий по этой задаче"
+        }
+      ],
+      "overall_score": число от 0 до 100,
+      "overall_strengths": ["..."],
+      "areas_to_improve": ["..."],
+      "study_recommendations": ["рекомендация 1", "рекомендация 2", "рекомендация 3"],
+      "motivational_message": "Короткое мотивирующее сообщение"
+    }
+
+    Правила:
+    - Массив task_feedbacks должен содержать РОВНО столько элементов, сколько задач передано
+      (в том же порядке: задача 1, задача 2, …).
+    - Учитывай эталонные ответы, если они даны — как ориентир, а не как единственно верный текст.
+    - Оценивай: правильность и полнота, структура ответа, практическая применимость, терминология.
+
+# Справочники для GET /interview/* (роли и параметры выбора на фронте)
+interview_catalog:
+  specializations:
+    - id: product_analyst
+      name: "Product Analyst"
+    - id: data_analyst
+      name: "Data Analyst"
+  experience_levels:
+    - id: junior
+      name: "Junior"
+    - id: middle
+      name: "Middle"
+    - id: senior
+      name: "Senior"
+  company_tiers:
+    - id: tier1
+      name: "Tier 1"
+      description: "Яндекс, VK, Тинькофф, Ozon, Avito и др."
+    - id: tier2
+      name: "Tier 2"
+      description: "Крупные компании с сильными командами"
+  topics:
+    - id: statistics
+      name: "Статистика"
+    - id: ab_testing
+      name: "A/B тестирование"
+    - id: probability
+      name: "Теория вероятностей"
+    - id: python
+      name: "Python"
+    - id: sql
+      name: "SQL"
+    - id: random
+      name: "Рандом (микс тем)"

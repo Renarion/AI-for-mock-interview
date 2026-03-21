@@ -6,6 +6,10 @@
 # Используется только OpenAI API.
 # =============================================================================
 
+# Неофициальный endpoint (прокси OpenAI-compatible), если с api.openai.com приходит 403 unsupported_country
+openai:
+  base_url: ""
+
 models:
   # Для официального OpenAI API: без префикса или openai/gpt-4.1-nano — префикс отрежется.
   openai: gpt-4.1-nano

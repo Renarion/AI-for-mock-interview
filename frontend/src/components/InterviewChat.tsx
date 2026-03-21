@@ -75,9 +75,18 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
     return () => clearInterval(timer)
   }, [startTime])
 
-  // Auto-scroll to bottom
+  // Прокрутка: последний блок «Задача» — в зону видимости над фиксированным футером
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const tasks = messages.filter((m) => m.type === 'task')
+    const last = tasks[tasks.length - 1]
+    if (!last) return
+    const t = window.setTimeout(() => {
+      document.getElementById(`chat-task-${last.id}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    }, 80)
+    return () => window.clearTimeout(t)
   }, [messages])
 
   const formatTime = (seconds: number) => {
@@ -192,9 +201,9 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-30 glass border-b border-white/10">
+      <header className="z-30 shrink-0 glass border-b border-white/10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="text-white/60">
@@ -212,13 +221,14 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
         </div>
       </header>
 
-      {/* Messages */}
-      <main className="flex-1 pt-20 pb-32 px-4">
-        <div className="max-w-4xl mx-auto space-y-4">
+      {/* Messages: только эта область скроллится; отступ снизу под фиксированный футер */}
+      <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 pb-4 pt-4 scroll-smooth">
+        <div className="max-w-4xl mx-auto space-y-4 pb-[min(42vh,17rem)]">
           <AnimatePresence initial={false}>
             {messages.map((message) => (
               <motion.div
                 key={message.id}
+                id={message.type === 'task' ? `chat-task-${message.id}` : undefined}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
@@ -228,7 +238,7 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
                 }`}
               >
                 {message.type === 'task' && (
-                  <div className="glass p-6 rounded-2xl border-l-4 border-primary">
+                  <div className="glass scroll-mt-4 p-6 rounded-2xl border-l-4 border-primary">
                     <div className="flex items-center gap-2 mb-3 text-primary">
                       <span className="text-lg font-semibold">Задача {message.taskNumber}</span>
                     </div>
@@ -310,12 +320,12 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
             ))}
           </AnimatePresence>
           
-          <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} className="h-2 shrink-0" aria-hidden />
         </div>
       </main>
 
       {/* Input area */}
-      <footer className="fixed bottom-0 left-0 right-0 z-20 glass border-t border-white/10">
+      <footer className="z-20 shrink-0 glass border-t border-white/10">
           <div className="max-w-4xl mx-auto p-4">
             {error && (
               <div className="mb-3 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-200 text-sm flex items-center justify-between">

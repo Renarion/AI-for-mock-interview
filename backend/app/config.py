@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     
     # LLM: только OpenAI; модель и промпт — в app/llm_config.yaml
     openai_api_key: str = ""
+    # Опционально: OpenAI-compatible API (прокси), если 403 unsupported_country с api.openai.com
+    openai_base_url: str = ""
     
     # YooKassa Payment
     yookassa_shop_id: str = ""

@@ -8,6 +8,7 @@ from app.llm_config_loader import (
     get_full_interview_system_prompt,
     get_full_interview_temperature,
     get_max_tokens_openai_full_interview,
+    get_openai_base_url,
     get_openai_model,
     resolve_openai_api_key,
 )
@@ -70,7 +71,14 @@ class LLMService:
 
     def __init__(self) -> None:
         key = resolve_openai_api_key()
-        self.openai_client = AsyncOpenAI(api_key=key) if key else None
+        if not key:
+            self.openai_client = None
+            return
+        base = get_openai_base_url()
+        kwargs: dict[str, Any] = {"api_key": key}
+        if base:
+            kwargs["base_url"] = base
+        self.openai_client = AsyncOpenAI(**kwargs)
 
     def _missing_key_message(self) -> str:
         return (
@@ -107,7 +115,7 @@ class LLMService:
             raw = response.choices[0].message.content
             result = json.loads(raw or "{}")
         except Exception as e:
-            return self._fallback_bundle(items, str(e))
+            return self._fallback_bundle(items, self._format_llm_error(e))
 
         return self._normalize_bundle(items, result)
 
@@ -150,6 +158,19 @@ class LLMService:
         if not report["motivational_message"]:
             report["motivational_message"] = "Спасибо за участие. Анализируйте разбор и пробуйте снова."
         return feedbacks, report
+
+    @staticmethod
+    def _format_llm_error(exc: Exception) -> str:
+        raw = str(exc)
+        lower = raw.lower()
+        if "unsupported_country" in lower or "country, region, or territory not supported" in lower:
+            return (
+                f"{raw}\n\n"
+                "OpenAI блокирует запросы из вашего региона/с IP сервера. "
+                "Варианты: перенести бэкенд в поддерживаемый регион, использовать VPN на уровне исходящего трафика, "
+                "или задать в backend/.env совместимый прокси: OPENAI_BASE_URL=… (см. backend/LLM_QUICKSTART.md)."
+            )
+        return raw
 
     def _fallback_bundle(
         self,

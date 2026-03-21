@@ -24,6 +24,24 @@ def load_llm_yaml() -> dict[str, Any]:
     return data
 
 
+def get_openai_base_url() -> str | None:
+    """
+    Кастомный base URL для OpenAI SDK (прокси / совместимый endpoint).
+    Приоритет: OPENAI_BASE_URL в окружении → Settings → llm_config.yaml openai.base_url.
+    Пустая строка = официальный api.openai.com (поведение по умолчанию SDK).
+    """
+    env = (os.getenv("OPENAI_BASE_URL") or "").strip()
+    if env:
+        return env.rstrip("/")
+    s = get_settings().openai_base_url.strip()
+    if s:
+        return s.rstrip("/")
+    cfg = load_llm_yaml()
+    oa = cfg.get("openai") or {}
+    y = str(oa.get("base_url", "")).strip()
+    return y.rstrip("/") if y else None
+
+
 def resolve_openai_api_key() -> str:
     cfg = load_llm_yaml()
     sec = cfg.get("secrets") or {}

@@ -3,12 +3,12 @@
 # -----------------------------------------------------------------------------
 # Ключ API: в backend/.env → OPENAI_API_KEY (не коммитить).
 # Модель / промпт / температура — здесь. После правок перезапустите бэкенд.
-# Используется только OpenAI API.
+# SDK OpenAI-compatible: по умолчанию endpoint РФ-провайдера. Для api.openai.com очистите base_url
+# и не задавайте OPENAI_BASE_URL в .env.
 # =============================================================================
 
-# Неофициальный endpoint (прокси OpenAI-compatible), если с api.openai.com приходит 403 unsupported_country
 openai:
-  base_url: ""
+  base_url: "https://api.vsellm.ru/v1"
 
 models:
   # Для официального OpenAI API: без префикса или openai/gpt-4.1-nano — префикс отрежется.

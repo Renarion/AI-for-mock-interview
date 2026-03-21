@@ -206,7 +206,7 @@ nano backend/.env
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/mock_interview
 SECRET_KEY=сгенерируй-случайную-строку-минимум-32-символа
 OPENAI_API_KEY=sk-ТВОЙ_OPENAI_КЛЮЧ
-# LLM_PROVIDER=openai   # опционально; модель/промпт/температура — в backend/app/llm_config.yaml
+# Модель/промпт/температура — в backend/app/llm_config.yaml
 YOOKASSA_SHOP_ID=ТВОЙ_SHOP_ID
 YOOKASSA_SECRET_KEY=ТВОЙ_СЕКРЕТНЫЙ_КЛЮЧ
 DEBUG=false
@@ -561,7 +561,7 @@ AI-for-mock-interview/
 |------|----------|
 | `auth.py` | Логика авторизации: регистрация/вход, хеширование паролей, выдача JWT |
 | `interview.py` | **Основная логика интервью**: создание сессий, выдача задач, обработка ответов |
-| `llm.py` | **LLM (OpenAI/Anthropic)**: один запрос в конце сессии — разбор по всем задачам + итог (настройки из `llm_config.yaml`) |
+| `llm.py` | **OpenAI**: один запрос в конце сессии — разбор по всем задачам + итог (настройки из `llm_config.yaml`) |
 | `payment.py` | Логика платежей: создание платежа в YooKassa, обработка webhook |
 
 #### Папка `/backend/task_migrator/` — Утилиты

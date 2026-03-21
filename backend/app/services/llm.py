@@ -1,20 +1,14 @@
-"""LLM service: один вызов в конце интервью; настройки из llm_config.yaml."""
+"""LLM service: один вызов в конце интервью; OpenAI API; настройки из llm_config.yaml."""
 import json
-import re
 from typing import Any
 
-from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
 
 from app.llm_config_loader import (
-    effective_llm_provider,
-    get_anthropic_model,
     get_full_interview_system_prompt,
     get_full_interview_temperature,
-    get_max_tokens_anthropic_full_interview,
     get_max_tokens_openai_full_interview,
     get_openai_model,
-    resolve_anthropic_api_key,
     resolve_openai_api_key,
 )
 from app.schemas.interview import TaskFeedback
@@ -72,28 +66,16 @@ def build_full_interview_user_message(items: list[dict[str, Any]], selection: di
 
 
 class LLMService:
-    """Генерация полного фидбека по всем ответам одним запросом к LLM."""
+    """Генерация полного фидбека по всем ответам одним запросом к OpenAI."""
 
     def __init__(self) -> None:
-        self._provider = effective_llm_provider()
-        if self._provider == "openai":
-            key = resolve_openai_api_key()
-            self.openai_client = AsyncOpenAI(api_key=key) if key else None
-            self.anthropic_client = None
-        else:
-            key = resolve_anthropic_api_key()
-            self.openai_client = None
-            self.anthropic_client = AsyncAnthropic(api_key=key) if key else None
+        key = resolve_openai_api_key()
+        self.openai_client = AsyncOpenAI(api_key=key) if key else None
 
     def _missing_key_message(self) -> str:
-        if self._provider == "openai":
-            return (
-                "Не задан API-ключ OpenAI. Укажите OPENAI_API_KEY в backend/.env "
-                "или secrets.openai_api_key в app/llm_config.yaml (только для локальной разработки)."
-            )
         return (
-            "Не задан API-ключ Anthropic. Укажите ANTHROPIC_API_KEY в backend/.env "
-            "или secrets.anthropic_api_key в app/llm_config.yaml (только для локальной разработки)."
+            "Не задан API-ключ OpenAI. Укажите OPENAI_API_KEY в backend/.env "
+            "или secrets.openai_api_key в app/llm_config.yaml (только для локальной разработки)."
         )
 
     async def generate_full_interview_bundle(
@@ -109,41 +91,23 @@ class LLMService:
         temperature = get_full_interview_temperature()
         user_prompt = build_full_interview_user_message(items, selection)
 
-        if self._provider == "openai":
-            if not self.openai_client:
-                return self._fallback_bundle(items, self._missing_key_message())
-            try:
-                response = await self.openai_client.chat.completions.create(
-                    model=get_openai_model(),
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                    response_format={"type": "json_object"},
-                    temperature=temperature,
-                    max_tokens=get_max_tokens_openai_full_interview(),
-                )
-                raw = response.choices[0].message.content
-                result = json.loads(raw or "{}")
-            except Exception as e:
-                return self._fallback_bundle(items, str(e))
-        else:
-            if not self.anthropic_client:
-                return self._fallback_bundle(items, self._missing_key_message())
-            try:
-                response = await self.anthropic_client.messages.create(
-                    model=get_anthropic_model(),
-                    max_tokens=get_max_tokens_anthropic_full_interview(),
-                    system=system_prompt,
-                    messages=[{"role": "user", "content": user_prompt}],
-                )
-                content = response.content[0].text
-                json_match = re.search(r"\{[\s\S]*\}", content)
-                if not json_match:
-                    raise ValueError("No JSON found in response")
-                result = json.loads(json_match.group())
-            except Exception as e:
-                return self._fallback_bundle(items, str(e))
+        if not self.openai_client:
+            return self._fallback_bundle(items, self._missing_key_message())
+        try:
+            response = await self.openai_client.chat.completions.create(
+                model=get_openai_model(),
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                response_format={"type": "json_object"},
+                temperature=temperature,
+                max_tokens=get_max_tokens_openai_full_interview(),
+            )
+            raw = response.choices[0].message.content
+            result = json.loads(raw or "{}")
+        except Exception as e:
+            return self._fallback_bundle(items, str(e))
 
         return self._normalize_bundle(items, result)
 

@@ -3,27 +3,22 @@
 # -----------------------------------------------------------------------------
 # Ключ API: в backend/.env → OPENAI_API_KEY (не коммитить).
 # Модель / промпт / температура — здесь. После правок перезапустите бэкенд.
+# Используется только OpenAI API.
 # =============================================================================
-
-provider: openai
 
 models:
   # Для официального OpenAI API: без префикса или openai/gpt-4.1-nano — префикс отрежется.
   openai: gpt-4.1-nano
-  anthropic: claude-3-5-sonnet-20241022
 
 temperature:
   full_interview: 0.45
 
 max_tokens:
   openai_full_interview: 8192
-  anthropic_full_interview: 4096
 
 secrets:
   openai_api_key: ""
-  anthropic_api_key: ""
   openai_api_key_env: OPENAI_API_KEY
-  anthropic_api_key_env: ANTHROPIC_API_KEY
 
 prompts:
   # Вывод остаётся JSON (нужен фронту). Суть вашего «текстового» разбора кладите в
@@ -74,9 +69,7 @@ interview_catalog:
     - id: junior
       name: "Junior"
     - id: middle
-      name: "Middle"
-    - id: senior
-      name: "Senior"
+      name: "Middle+"
   company_tiers:
     - id: tier1
       name: "Tier 1"

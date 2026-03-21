@@ -23,7 +23,6 @@ git pull origin main
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/mock_interview
 SECRET_KEY=придумай-длинную-случайную-строку-минимум-32-символа
 OPENAI_API_KEY=sk-твой-ключ
-LLM_PROVIDER=openai
 YOOKASSA_SHOP_ID=твой-shop-id
 YOOKASSA_SECRET_KEY=твой-секрет
 DEBUG=false

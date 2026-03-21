@@ -7,7 +7,7 @@ AI-powered mock interview platform for Data Analyst and Product Analyst position
 - **Animated Landing Page** - Beautiful pulsating sphere animation inspired by AI/futuristic themes
 - **Custom Authentication** - Registration and login by email or Telegram nickname + password (no external providers, works without VPN)
 - **Interview Selection** - Choose specialization, experience level, company tier, and topic
-- **AI-Powered Feedback** - After all session questions, one consolidated report from the LLM (OpenAI/Anthropic); prompts and models are configured in `backend/app/llm_config.yaml`
+- **AI-Powered Feedback** - After all session questions, one consolidated report via **OpenAI**; prompts and models are in `backend/app/llm_config.yaml`
 - **Final Reports** - Comprehensive analysis with study recommendations
 - **Payment Integration** - YooKassa integration for purchasing question packs
 
@@ -39,7 +39,7 @@ AI-powered mock interview platform for Data Analyst and Product Analyst position
 │   │   ├── services/       # Business logic
 │   │   ├── llm_config.yaml # LLM: модели, температура, промпты, роли/темы для API
 │   │   ├── llm_config_loader.py
-│   │   ├── config.py       # Settings (.env: БД, секреты, опционально LLM_PROVIDER)
+│   │   ├── config.py       # Settings (.env: БД, OPENAI_API_KEY)
 │   │   ├── database.py     # DB connection
 │   │   └── main.py         # FastAPI app
 │   ├── alembic/            # Database migrations
@@ -84,8 +84,6 @@ Create these files (examples are provided in the repo):
    DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/mock_interview
    SECRET_KEY=change-me-in-production
    OPENAI_API_KEY=sk-xxxxx
-   # or ANTHROPIC_API_KEY=sk-ant-xxxxx
-   # LLM_PROVIDER=openai   # опционально; если не задан — берётся из app/llm_config.yaml
    YOOKASSA_SHOP_ID=xxxxx
    YOOKASSA_SECRET_KEY=xxxxx
    DEBUG=false
@@ -94,11 +92,11 @@ Create these files (examples are provided in the repo):
    > For local development without Docker set the host in `DATABASE_URL` to `localhost`.
 
 3. **LLM-настройки** — файл `backend/app/llm_config.yaml`:
-   - `provider`, `models.openai` / `models.anthropic`
+   - `models.openai`
    - `temperature.full_interview`, `max_tokens.*`
    - `prompts.full_interview_system` — системный промпт для единого разбора после всех ответов
    - `interview_catalog` — специализации, уровни, tier компаний, темы (отдаются эндпоинтами `/interview/*`)
-   - `secrets`: можно указать ключ прямо в YAML **только для локальных тестов** (не коммитьте); иначе используйте `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` в `backend/.env` (имена переменных настраиваются в секции `secrets` YAML).
+   - `secrets`: ключ в YAML **только для локальных тестов** (не коммитьте); иначе `OPENAI_API_KEY` в `backend/.env` (имя переменной — в `secrets.openai_api_key_env`).
    - Пошагово: **`backend/LLM_QUICKSTART.md`**
 
 4. **`frontend/.env.local`** (for local dev)

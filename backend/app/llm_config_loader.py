@@ -1,4 +1,4 @@
-"""Load LLM YAML config (prompts, models, catalog). API keys: yaml inline or .env."""
+"""Load LLM YAML config (prompts, OpenAI model). API key: yaml inline or .env."""
 from __future__ import annotations
 
 import os
@@ -24,21 +24,6 @@ def load_llm_yaml() -> dict[str, Any]:
     return data
 
 
-def effective_llm_provider() -> str:
-    """
-    Приоритет: непустой LLM_PROVIDER в окружении → непустой llm_provider из Settings (.env)
-    → поле provider в llm_config.yaml.
-    """
-    for candidate in (os.getenv("LLM_PROVIDER"), get_settings().llm_provider):
-        if candidate and str(candidate).strip():
-            p = str(candidate).strip().lower()
-            if p in ("openai", "anthropic"):
-                return p
-    cfg = load_llm_yaml()
-    p = str(cfg.get("provider", "openai")).strip().lower()
-    return p if p in ("openai", "anthropic") else "openai"
-
-
 def resolve_openai_api_key() -> str:
     cfg = load_llm_yaml()
     sec = cfg.get("secrets") or {}
@@ -47,16 +32,6 @@ def resolve_openai_api_key() -> str:
         return inline
     env_name = str(sec.get("openai_api_key_env", "OPENAI_API_KEY"))
     return os.getenv(env_name, "") or get_settings().openai_api_key
-
-
-def resolve_anthropic_api_key() -> str:
-    cfg = load_llm_yaml()
-    sec = cfg.get("secrets") or {}
-    inline = str(sec.get("anthropic_api_key", "")).strip()
-    if inline:
-        return inline
-    env_name = str(sec.get("anthropic_api_key_env", "ANTHROPIC_API_KEY"))
-    return os.getenv(env_name, "") or get_settings().anthropic_api_key
 
 
 def get_openai_model() -> str:
@@ -68,12 +43,6 @@ def get_openai_model() -> str:
     return m
 
 
-def get_anthropic_model() -> str:
-    cfg = load_llm_yaml()
-    models = cfg.get("models") or {}
-    return str(models.get("anthropic", "claude-3-5-sonnet-20241022"))
-
-
 def get_full_interview_temperature() -> float:
     cfg = load_llm_yaml()
     t = (cfg.get("temperature") or {}).get("full_interview", 0.7)
@@ -83,12 +52,6 @@ def get_full_interview_temperature() -> float:
 def get_max_tokens_openai_full_interview() -> int:
     cfg = load_llm_yaml()
     mt = (cfg.get("max_tokens") or {}).get("openai_full_interview", 4096)
-    return int(mt)
-
-
-def get_max_tokens_anthropic_full_interview() -> int:
-    cfg = load_llm_yaml()
-    mt = (cfg.get("max_tokens") or {}).get("anthropic_full_interview", 4096)
     return int(mt)
 
 

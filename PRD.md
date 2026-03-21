@@ -127,7 +127,7 @@ Paid --> Landing
 
 ### LLM configuration (реализация)
 - Файл **`backend/app/llm_config.yaml`**: провайдер по умолчанию, имена/ID моделей, температура, max_tokens, системный промпт (`full_interview_system`), справочник ролей/тем для API (`interview_catalog`), опциональные inline-ключи или имена переменных окружения для ключей.
-- Секреты по умолчанию в **`backend/.env`**: `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`; опционально `LLM_PROVIDER` переопределяет `provider` из YAML.
+- Секрет в **`backend/.env`**: `OPENAI_API_KEY`. Модель и промпт — в **`backend/app/llm_config.yaml`**.
 - Загрузчик: `backend/app/llm_config_loader.py`.
 
 ### Database

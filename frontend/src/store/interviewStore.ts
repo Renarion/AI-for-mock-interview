@@ -67,6 +67,9 @@ interface InterviewState {
   paidQuestionsRemaining: number
   setUserStatus: (hasTrial: boolean, paidQuestions: number) => void
   
+  /** Перед новым вызовом startInterview: индекс и ответы от прошлой сессии не должны жить в persist */
+  resetForNewInterviewSession: () => void
+  
   // Reset
   resetInterview: () => void
 }
@@ -111,6 +114,14 @@ export const useInterviewStore = create<InterviewState>()(
       setUserStatus: (hasTrialAvailable, paidQuestionsRemaining) =>
         set({ hasTrialAvailable, paidQuestionsRemaining }),
       
+      resetForNewInterviewSession: () =>
+        set({
+          currentTaskIndex: 0,
+          answers: [],
+          feedbacks: [],
+          finalReport: null,
+        }),
+
       resetInterview: () =>
         set({
           selection: null,

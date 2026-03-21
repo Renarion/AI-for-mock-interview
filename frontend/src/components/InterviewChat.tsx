@@ -45,6 +45,13 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
   const MAX_CHARS = 3000
   const TIME_LIMIT_MINUTES = 20
 
+  // Если в persist остался currentTaskIndex >= длины tasks — выравниваем
+  useEffect(() => {
+    if (tasks.length > 0 && currentTaskIndex >= tasks.length) {
+      setCurrentTaskIndex(0)
+    }
+  }, [tasks, currentTaskIndex, setCurrentTaskIndex])
+
   // Initialize with first task
   useEffect(() => {
     if (tasks.length > 0 && messages.length === 0) {

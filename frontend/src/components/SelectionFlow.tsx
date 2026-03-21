@@ -25,7 +25,7 @@ interface Option {
 
 export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps) {
   const token = useAuthStore((s) => s.token)
-  const { setSelection, setSessionId, setTasks } = useInterviewStore()
+  const { setSelection, setSessionId, setTasks, resetForNewInterviewSession } = useInterviewStore()
   
   const [currentStep, setCurrentStep] = useState<Step>('experience') // было 'specialization' — шаг выбора product/data analyst отключён
   const [isLoading, setIsLoading] = useState(false)
@@ -120,7 +120,8 @@ export default function SelectionFlow({ onComplete, onBack }: SelectionFlowProps
         topic,
       })
       
-      // Save to store
+      // Save to store (сброс индекса/ответов от прошлой сессии из localStorage)
+      resetForNewInterviewSession()
       setSelection({
         specialization: effectiveSpecialization,
         experienceLevel,

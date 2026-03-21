@@ -142,6 +142,7 @@ export const useInterviewStore = create<InterviewState>()(
         currentTaskIndex: state.currentTaskIndex,
         answers: state.answers,
         feedbacks: state.feedbacks,
+        finalReport: state.finalReport,
         hasTrialAvailable: state.hasTrialAvailable,
         paidQuestionsRemaining: state.paidQuestionsRemaining,
       }),

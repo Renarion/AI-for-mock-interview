@@ -8,9 +8,10 @@ import { useInterviewStore } from '@/store/interviewStore'
 interface FinalReportProps {
   onRetry: () => void
   onPaymentRequired: () => void
+  onCloseToHome: () => void
 }
 
-export default function FinalReport({ onRetry, onPaymentRequired }: FinalReportProps) {
+export default function FinalReport({ onRetry, onPaymentRequired, onCloseToHome }: FinalReportProps) {
   const { finalReport, hasTrialAvailable, paidQuestionsRemaining } = useInterviewStore()
 
   if (!finalReport) {
@@ -222,13 +223,21 @@ export default function FinalReport({ onRetry, onPaymentRequired }: FinalReportP
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+          className="flex flex-col sm:flex-row gap-4 justify-center items-center flex-wrap"
         >
           <button
             onClick={handleRetryClick}
             className="btn-primary text-white min-w-[200px]"
           >
             {canRetry ? 'Пройти ещё раз' : 'Купить вопросы'}
+          </button>
+
+          <button
+            type="button"
+            onClick={onCloseToHome}
+            className="px-6 py-3 rounded-full border border-white/20 text-white/90 hover:bg-white/10 transition-colors min-w-[200px]"
+          >
+            На главную
           </button>
           
           <button

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import LandingPage from '@/components/LandingPage'
 import SelectionFlow from '@/components/SelectionFlow'
@@ -20,7 +20,11 @@ export default function Home() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('landing')
   const [showPayment, setShowPayment] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const { resetInterview, sessionId } = useInterviewStore()
+  const finalReport = useInterviewStore((s) => s.finalReport)
+  const sessionId = useInterviewStore((s) => s.sessionId)
+  const resetInterview = useInterviewStore((s) => s.resetInterview)
+  const authHydratedRef = useRef(false)
+  const prevTokenRef = useRef<string | null>(null)
 
   const [isInitialLoading, setIsInitialLoading] = useState(true)
 
@@ -35,10 +39,30 @@ export default function Home() {
 
   useEffect(() => {
     if (currentScreen !== 'landing') return
-    if (sessionId && token && user) {
+    if (finalReport && token && user) {
+      setCurrentScreen('report')
+      return
+    }
+    if (sessionId && token && user && !finalReport) {
       setCurrentScreen('interview')
     }
-  }, [currentScreen, sessionId, token, user])
+  }, [currentScreen, sessionId, token, user, finalReport])
+
+  useEffect(() => {
+    if (!authHydratedRef.current) {
+      authHydratedRef.current = true
+      prevTokenRef.current = token
+      return
+    }
+    const prev = prevTokenRef.current
+    prevTokenRef.current = token
+    if (prev && !token) {
+      resetInterview()
+      setCurrentScreen('landing')
+      setShowAuthModal(false)
+      setShowPayment(false)
+    }
+  }, [token, resetInterview])
 
   const handleStartInterview = () => {
     if (!isSignedIn) {
@@ -77,6 +101,11 @@ export default function Home() {
   }
 
   const handleBackToLanding = () => {
+    resetInterview()
+    setCurrentScreen('landing')
+  }
+
+  const handleCloseReportToHome = () => {
     resetInterview()
     setCurrentScreen('landing')
   }
@@ -160,6 +189,7 @@ export default function Home() {
               <FinalReport
                 onRetry={handleRetry}
                 onPaymentRequired={handlePaymentRequired}
+                onCloseToHome={handleCloseReportToHome}
               />
             </motion.div>
           )}

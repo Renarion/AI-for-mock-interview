@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: 'AI Mock Interview - Data & Product Analyst Practice',
   description: 'Prepare for your Data Analyst or Product Analyst interview with AI-powered mock interviews. Get instant feedback and improve your skills.',
   keywords: ['mock interview', 'data analyst', 'product analyst', 'interview prep', 'AI interview'],
+  icons: {
+    icon: '/favicon.png',
+    apple: '/apple-touch-icon.png',
+    shortcut: '/favicon.png',
+  },
 }
 
 export default function RootLayout({

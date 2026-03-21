@@ -47,7 +47,8 @@ class UserMeResponse(BaseModel):
     name: str
     email: str
     telegram_username: Optional[str] = None
-    password_masked: str  # e.g. "********"
+    password_masked: str  # short mask when hidden in UI
+    password_length: Optional[int] = None  # hint for «show»; no plaintext
     questions_remaining: int
     trial_question_flg: bool
     paid_questions_number_left: int

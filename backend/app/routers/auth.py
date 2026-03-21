@@ -124,12 +124,14 @@ async def get_me(
     """Get current user info for profile (password masked)."""
     trial = getattr(user, 'trial_questions_left', 1 if user.trial_question_flg else 0)
     q = trial + user.paid_questions_number_left
+    pl = getattr(user, "password_length", None)
     return UserMeResponse(
         user_id=user.user_id,
         name=user.name,
         email=user.email,
         telegram_username=user.telegram_username,
-        password_masked="********",
+        password_masked="••••••••",
+        password_length=pl,
         questions_remaining=q,
         trial_question_flg=trial > 0,
         paid_questions_number_left=user.paid_questions_number_left,

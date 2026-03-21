@@ -84,8 +84,8 @@ export default function Home() {
     >
       <div className="fixed inset-0 bg-gradient-radial from-background-elevated via-background to-black z-0" />
 
-      {/* Profile icon - top right */}
-      <div className="fixed top-4 right-4 z-20">
+      {/* Profile icon - top right (выше fixed-шапки интервью z-40) */}
+      <div className="fixed top-4 right-4 z-50">
         <ProfileDropdown />
       </div>
 
@@ -130,10 +130,10 @@ export default function Home() {
             <motion.div
               key="interview"
               className="flex min-h-[100dvh] w-full flex-1 flex-col"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.5 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35 }}
             >
               <InterviewChat
                 onComplete={handleInterviewComplete}

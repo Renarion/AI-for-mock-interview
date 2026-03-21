@@ -44,6 +44,9 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
   
   const MAX_CHARS = 3000
   const TIME_LIMIT_MINUTES = 20
+  /** Высота fixed-шапки + safe-area; синхронно с отступом main и scroll-margin у задач */
+  const headerOffset =
+    'calc(0.5rem + 3.5rem + env(safe-area-inset-top, 0px))'
 
   // Если в persist остался currentTaskIndex >= длины tasks — выравниваем
   useEffect(() => {
@@ -216,9 +219,9 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
   }
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-1 flex-col overflow-hidden">
-      {/* Header */}
-      <header className="z-30 shrink-0 glass border-b border-white/10">
+    <div className="flex min-h-[100dvh] w-full flex-1 flex-col">
+      {/* Шапка: закреплена к верху экрана (как футер снизу) */}
+      <header className="fixed top-0 left-0 right-0 z-40 glass border-b border-white/10 pt-[env(safe-area-inset-top,0px)]">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="text-white/60">
@@ -236,9 +239,12 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
         </div>
       </header>
 
-      {/* Messages: только эта область скроллится; отступ снизу под фиксированный футер */}
-      <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 pb-4 pt-4 scroll-smooth">
-        <div className="max-w-4xl mx-auto space-y-4 pb-[min(42vh,17rem)]">
+      {/* Messages: только эта область скроллится; отступы под fixed-шапку и fixed-футер */}
+      <main
+        style={{ paddingTop: headerOffset }}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 pb-[calc(14rem+env(safe-area-inset-bottom,0px))] scroll-smooth"
+      >
+        <div className="max-w-4xl mx-auto space-y-4">
           <AnimatePresence initial={false}>
             {messages.map((message) => (
               <motion.div
@@ -251,9 +257,12 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
                 className={`${
                   message.type === 'user' ? 'ml-auto max-w-[80%]' : 'max-w-[90%]'
                 }`}
+                style={
+                  message.type === 'task' ? { scrollMarginTop: headerOffset } : undefined
+                }
               >
                 {message.type === 'task' && (
-                  <div className="glass scroll-mt-4 p-6 rounded-2xl border-l-4 border-primary">
+                  <div className="glass p-6 rounded-2xl border-l-4 border-primary">
                     <div className="flex items-center gap-2 mb-3 text-primary">
                       <span className="text-lg font-semibold">Задача {message.taskNumber}</span>
                     </div>
@@ -339,9 +348,9 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
         </div>
       </main>
 
-      {/* Input area */}
-      <footer className="relative z-30 shrink-0 glass border-t border-white/10">
-          <div className="max-w-4xl mx-auto p-4">
+      {/* Input area: закреплён к низу viewport, лента сообщений скроллится отдельно */}
+      <footer className="fixed bottom-0 left-0 right-0 z-40 glass border-t border-white/10 pb-[max(1rem,env(safe-area-inset-bottom))] pt-0">
+          <div className="max-w-4xl mx-auto px-4 py-3">
             {error && (
               <div className="mb-3 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-200 text-sm flex items-center justify-between">
                 <span>{error}</span>

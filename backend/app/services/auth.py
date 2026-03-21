@@ -87,6 +87,7 @@ class AuthService:
             email=email_lower,
             telegram_username=telegram_username or None,
             password_hash=hash_password(password),
+            password_length=len(password),
             trial_question_flg=True,
             trial_questions_left=3,
             paid_questions_number_left=0,

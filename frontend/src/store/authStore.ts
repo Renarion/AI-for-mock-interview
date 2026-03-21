@@ -9,6 +9,7 @@ export interface UserMe {
   email: string
   telegram_username: string | null
   password_masked: string
+  password_length?: number | null
   questions_remaining: number
   trial_question_flg: boolean
   paid_questions_number_left: number

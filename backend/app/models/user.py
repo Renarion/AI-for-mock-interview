@@ -19,6 +19,8 @@ class User(Base):
     email = Column(String, unique=True, nullable=False, index=True)
     telegram_username = Column(String, unique=True, nullable=True, index=True)
     password_hash = Column(String, nullable=False)
+    # Length only (set at registration); plaintext is never stored.
+    password_length = Column(Integer, nullable=True)
     # Entitlements: free trial questions for new users, then paid
     trial_question_flg = Column(Boolean, default=True)  # True = has trial questions left (kept for API compat)
     trial_questions_left = Column(Integer, default=3)  # Number of free questions (new users get 3)

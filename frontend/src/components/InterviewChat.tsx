@@ -38,6 +38,11 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
   const [error, setError] = useState<string | null>(null)
   const [startTime, setStartTime] = useState<number>(Date.now())
   const [elapsedTime, setElapsedTime] = useState(0)
+  const [pendingNextTask, setPendingNextTask] = useState<{
+    task_id: number
+    task_question: string
+    task_number: number
+  } | null>(null)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -55,26 +60,55 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
     }
   }, [tasks, currentTaskIndex, setCurrentTaskIndex])
 
-  // Initialize with first task
+  // Initialize current task (supports refresh/resume from existing session)
   useEffect(() => {
-    if (tasks.length > 0 && messages.length === 0) {
-      const welcomeMessage: ChatMessage = {
-        id: 'welcome',
-        type: 'system',
-        content: `Добро пожаловать на мок-интервью! 🎯\n\nВам предстоит решить ${tasks.length} ${tasks.length === 1 ? 'задачу' : tasks.length < 5 ? 'задачи' : 'задач'}. Постарайтесь уложиться в ${TIME_LIMIT_MINUTES} минут на каждую. Между задачами ответов от ИИ не будет — один общий разбор вы получите после последнего ответа.`,
-      }
-      
-      const taskMessage: ChatMessage = {
-        id: `task-${tasks[0].task_id}`,
-        type: 'task',
-        content: tasks[0].task_question,
-        taskNumber: 1,
-      }
-      
-      setMessages([welcomeMessage, taskMessage])
-      setStartTime(Date.now())
+    if (tasks.length === 0 || messages.length > 0) return
+
+    const welcomeMessage: ChatMessage = {
+      id: 'welcome',
+      type: 'system',
+      content: `Добро пожаловать на мок-интервью! 🎯\n\nВам предстоит решить ${tasks.length} ${tasks.length === 1 ? 'задачу' : tasks.length < 5 ? 'задачи' : 'задач'}. Постарайтесь уложиться в ${TIME_LIMIT_MINUTES} минут на каждую. Между задачами ответов от ИИ не будет — один общий разбор вы получите после последнего ответа.`,
     }
-  }, [tasks])
+
+    const localIndex = Math.min(Math.max(currentTaskIndex, 0), tasks.length - 1)
+    const localTask = tasks[localIndex]
+    const applyInitial = (taskId: number, taskQuestion: string, taskNumber: number, index: number) => {
+      setCurrentTaskIndex(index)
+      setMessages([
+        welcomeMessage,
+        {
+          id: `task-${taskId}`,
+          type: 'task',
+          content: taskQuestion,
+          taskNumber,
+        },
+      ])
+      setStartTime(Date.now())
+      setElapsedTime(0)
+    }
+
+    if (!token || !sessionId) {
+      applyInitial(localTask.task_id, localTask.task_question, localIndex + 1, localIndex)
+      return
+    }
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        const serverTask = await interviewApi.getCurrentTask(token, sessionId)
+        if (cancelled) return
+        const serverIndex = Math.max(0, serverTask.task_number - 1)
+        applyInitial(serverTask.task_id, serverTask.task_question, serverTask.task_number, serverIndex)
+      } catch {
+        if (cancelled) return
+        applyInitial(localTask.task_id, localTask.task_question, localIndex + 1, localIndex)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [tasks, messages.length, token, sessionId, currentTaskIndex, setCurrentTaskIndex])
 
   // Timer
   useEffect(() => {
@@ -108,7 +142,7 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
   const isOverTime = elapsedTime > TIME_LIMIT_MINUTES * 60
 
   const handleSubmitAnswer = async () => {
-    if (!inputValue.trim() || isSubmitting) return
+    if (!inputValue.trim() || isSubmitting || pendingNextTask) return
 
     if (!sessionId) {
       setError('Сессия интервью не найдена. Вернитесь на главную и начните заново.')
@@ -158,17 +192,7 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
       if (response.can_continue && response.tasks_remaining > 0) {
         const nextTask = await interviewApi.getCurrentTask(token, sessionId)
         setCurrentTaskIndex(Math.max(0, nextTask.task_number - 1))
-        const nextTaskMessage: ChatMessage = {
-          id: `task-${nextTask.task_id}`,
-          type: 'task',
-          content: nextTask.task_question,
-          taskNumber: nextTask.task_number,
-        }
-        setMessages((prev) =>
-          prev.some((m) => m.id === nextTaskMessage.id) ? prev : [...prev, nextTaskMessage]
-        )
-        setStartTime(Date.now())
-        setElapsedTime(0)
+        setPendingNextTask(nextTask)
       } else {
         const finalLoading: ChatMessage = {
           id: 'final-loading',
@@ -207,6 +231,35 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleGetNextQuestion = () => {
+    if (!pendingNextTask) return
+    const nextTaskMessage: ChatMessage = {
+      id: `task-${pendingNextTask.task_id}`,
+      type: 'task',
+      content: pendingNextTask.task_question,
+      taskNumber: pendingNextTask.task_number,
+    }
+    setMessages((prev) =>
+      prev.some((m) => m.id === nextTaskMessage.id) ? prev : [...prev, nextTaskMessage]
+    )
+    setPendingNextTask(null)
+    setStartTime(Date.now())
+    setElapsedTime(0)
+  }
+
+  const handleFinishNow = async () => {
+    if (isSubmitting) return
+    const finalLoading: ChatMessage = {
+      id: 'final-loading',
+      type: 'loading',
+      content: 'Готовим развёрнутый фидбек по всем задачам...',
+    }
+    setPendingNextTask(null)
+    setMessages((prev) => [...prev, finalLoading])
+    await handleFinishInterview()
+    setMessages((prev) => prev.filter((m) => m.id !== 'final-loading'))
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -349,6 +402,29 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
       {/* Input area: закреплён к низу viewport, лента сообщений скроллится отдельно */}
       <footer className="fixed bottom-0 left-0 right-0 z-40 glass border-t border-white/10 pb-[max(1rem,env(safe-area-inset-bottom))] pt-0">
           <div className="max-w-4xl mx-auto px-4 py-3">
+            {pendingNextTask && (
+              <div className="mb-3 rounded-lg border border-white/15 bg-white/5 p-3">
+                <p className="text-sm text-white/80 mb-2">
+                  Ответ сохранён. Что делаем дальше?
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleFinishNow}
+                    className="rounded-lg border border-white/20 px-3 py-1.5 text-sm text-white/90 hover:bg-white/10 transition-colors"
+                  >
+                    Завершить интервью
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGetNextQuestion}
+                    className="rounded-lg bg-primary px-3 py-1.5 text-sm text-white hover:bg-primary-light transition-colors"
+                  >
+                    Получить следующий вопрос
+                  </button>
+                </div>
+              </div>
+            )}
             {error && (
               <div className="mb-3 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-200 text-sm flex items-center justify-between">
                 <span>{error}</span>
@@ -365,7 +441,7 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
                 onChange={(e) => setInputValue(e.target.value.slice(0, MAX_CHARS))}
                 onKeyDown={handleKeyDown}
                 placeholder="Напишите ваш ответ... (Shift+Enter для новой строки)"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !!pendingNextTask}
                 rows={3}
                 className="w-full p-4 pr-24 rounded-xl bg-background-elevated border border-white/10 focus:border-primary/50 focus:outline-none resize-none text-white placeholder-white/40"
               />
@@ -377,7 +453,7 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
                 <button
                   type="button"
                   onClick={handleSubmitAnswer}
-                  disabled={!inputValue.trim() || isSubmitting}
+                  disabled={!inputValue.trim() || isSubmitting || !!pendingNextTask}
                   className="relative z-10 p-2 rounded-lg bg-primary hover:bg-primary-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isSubmitting ? (

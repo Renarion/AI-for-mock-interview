@@ -33,6 +33,13 @@ export default function Home() {
     if (token) fetchUser()
   }, [token, fetchUser])
 
+  useEffect(() => {
+    if (currentScreen !== 'landing') return
+    if (sessionId && token && user) {
+      setCurrentScreen('interview')
+    }
+  }, [currentScreen, sessionId, token, user])
+
   const handleStartInterview = () => {
     if (!isSignedIn) {
       setShowAuthModal(true)
@@ -78,7 +85,7 @@ export default function Home() {
     <main
       className={
         currentScreen === 'interview'
-          ? 'min-h-screen relative overflow-x-hidden'
+          ? 'h-[100dvh] relative overflow-hidden'
           : 'min-h-screen relative overflow-hidden'
       }
     >
@@ -90,7 +97,7 @@ export default function Home() {
       </div>
 
       <div
-        className={`relative z-10 ${currentScreen === 'interview' ? 'min-h-[100dvh] flex flex-col' : ''}`}
+        className={`relative z-10 ${currentScreen === 'interview' ? 'h-[100dvh] flex flex-col overflow-hidden' : ''}`}
       >
         <AnimatePresence mode="wait">
           {currentScreen === 'landing' && (
@@ -129,7 +136,7 @@ export default function Home() {
           {currentScreen === 'interview' && (
             <motion.div
               key="interview"
-              className="flex min-h-[100dvh] w-full flex-1 flex-col"
+              className="flex h-[100dvh] w-full flex-1 flex-col overflow-hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}

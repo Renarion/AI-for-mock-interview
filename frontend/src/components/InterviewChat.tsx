@@ -114,12 +114,7 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
       setError('Сессия интервью не найдена. Вернитесь на главную и начните заново.')
       return
     }
-
-    const currentTask = tasks[currentTaskIndex]
-    if (!currentTask) {
-      setError('Задача не загружена. Обновите страницу или начните интервью снова.')
-      return
-    }
+    const answerText = inputValue.trim()
     
     setIsSubmitting(true)
     setError(null)
@@ -128,7 +123,7 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       type: 'user',
-      content: inputValue,
+      content: answerText,
     }
     
     // Add loading message
@@ -143,32 +138,35 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
     
     try {
       if (!token) throw new Error('Требуется авторизация')
+      const serverTask = await interviewApi.getCurrentTask(token, sessionId)
+      const currentTask = tasks.find((t) => t.task_id === serverTask.task_id)
       
       const response = await interviewApi.submitAnswer(token, sessionId, {
         session_id: sessionId,
-        task_id: currentTask.task_id,
-        answer: inputValue,
+        task_id: serverTask.task_id,
+        answer: answerText,
         time_spent_seconds: elapsedTime,
       })
       
       // Save to store
-      addAnswer(currentTask.task_id, inputValue)
+      addAnswer(serverTask.task_id, answerText)
       
       setMessages((prev) => prev.filter((m) => m.id !== 'loading'))
       
       useAuthStore.getState().fetchUser()
       
       if (response.can_continue && response.tasks_remaining > 0) {
-        const nextIndex = currentTaskIndex + 1
-        setCurrentTaskIndex(nextIndex)
-        const nextTask = tasks[nextIndex]
-        const taskMessage: ChatMessage = {
+        const nextTask = await interviewApi.getCurrentTask(token, sessionId)
+        setCurrentTaskIndex(Math.max(0, nextTask.task_number - 1))
+        const nextTaskMessage: ChatMessage = {
           id: `task-${nextTask.task_id}`,
           type: 'task',
           content: nextTask.task_question,
-          taskNumber: nextIndex + 1,
+          taskNumber: nextTask.task_number,
         }
-        setMessages((prev) => [...prev, taskMessage])
+        setMessages((prev) =>
+          prev.some((m) => m.id === nextTaskMessage.id) ? prev : [...prev, nextTaskMessage]
+        )
         setStartTime(Date.now())
         setElapsedTime(0)
       } else {
@@ -219,7 +217,7 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
   }
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-1 flex-col">
+    <div className="flex h-[100dvh] w-full flex-1 flex-col overflow-hidden">
       {/* Шапка: закреплена к верху экрана (как футер снизу) */}
       <header className="fixed top-0 left-0 right-0 z-40 glass border-b border-white/10 pt-[env(safe-area-inset-top,0px)]">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -242,7 +240,7 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
       {/* Messages: только эта область скроллится; отступы под fixed-шапку и fixed-футер */}
       <main
         style={{ paddingTop: headerOffset }}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 pb-[calc(14rem+env(safe-area-inset-bottom,0px))] scroll-smooth"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 pb-[calc(14rem+env(safe-area-inset-bottom,0px))] scroll-smooth touch-pan-y"
       >
         <div className="max-w-4xl mx-auto space-y-4">
           <AnimatePresence initial={false}>

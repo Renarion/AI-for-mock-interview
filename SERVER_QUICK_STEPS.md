@@ -155,6 +155,53 @@ certbot --nginx -d analyticsinterview.live -d www.analyticsinterview.live
 
 ---
 
+## Если backend падает: `No such image` / `KeyError: 'ContainerConfig'`
+
+Так бывает после `docker-compose build`, когда **старый контейнер** всё ещё ссылается на **удалённый образ**, а **docker-compose 1.29** ломается на новом Docker API. Сообщение `*** System restart required ***` к этому **не относится** (это просто напоминание Ubuntu про reboot).
+
+**База не трогаем:** не используйте `docker-compose down -v`.
+
+Выполните по порядку:
+
+```bash
+cd ~/AI-for-mock-interview
+
+# 1. Остановить стек (тома БД сохранятся)
+docker-compose down
+
+# 2. Удалить «битый» контейнер backend по имени из docker-compose.yml
+docker rm -f mock_interview_backend
+
+# 3. На всякий случай убрать другие остановленные контейнеры с этим именем
+docker ps -a --filter "name=mock_interview_backend" -q | xargs -r docker rm -f
+
+# 4. Поднять заново (образ вы уже собрали)
+docker-compose up -d
+```
+
+Если **снова** ошибка `ContainerConfig` — перейдите на **Compose V2** (рекомендуется на Ubuntu 24.04):
+
+```bash
+apt update && apt install -y docker-compose-plugin
+docker compose version
+cd ~/AI-for-mock-interview
+docker compose down
+docker rm -f mock_interview_backend
+docker compose build --no-cache backend
+docker compose up -d
+```
+
+Дальше везде используйте **`docker compose`** (с пробелом), а не `docker-compose`.
+
+Проверка:
+
+```bash
+docker compose ps
+docker compose logs --tail=40 backend
+```
+
+---
+
 ## Шпаргалка команд
 
 | Действие | Команда |

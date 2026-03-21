@@ -98,10 +98,18 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
   const isOverTime = elapsedTime > TIME_LIMIT_MINUTES * 60
 
   const handleSubmitAnswer = async () => {
-    if (!inputValue.trim() || isSubmitting || !sessionId) return
-    
+    if (!inputValue.trim() || isSubmitting) return
+
+    if (!sessionId) {
+      setError('Сессия интервью не найдена. Вернитесь на главную и начните заново.')
+      return
+    }
+
     const currentTask = tasks[currentTaskIndex]
-    if (!currentTask) return
+    if (!currentTask) {
+      setError('Задача не загружена. Обновите страницу или начните интервью снова.')
+      return
+    }
     
     setIsSubmitting(true)
     setError(null)
@@ -201,7 +209,7 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
   }
 
   return (
-    <div className="flex h-[100dvh] min-h-0 flex-col overflow-hidden">
+    <div className="flex min-h-[100dvh] w-full flex-1 flex-col overflow-hidden">
       {/* Header */}
       <header className="z-30 shrink-0 glass border-b border-white/10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -325,7 +333,7 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
       </main>
 
       {/* Input area */}
-      <footer className="z-20 shrink-0 glass border-t border-white/10">
+      <footer className="relative z-30 shrink-0 glass border-t border-white/10">
           <div className="max-w-4xl mx-auto p-4">
             {error && (
               <div className="mb-3 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-200 text-sm flex items-center justify-between">
@@ -353,9 +361,10 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
                   {inputValue.length}/{MAX_CHARS}
                 </span>
                 <button
+                  type="button"
                   onClick={handleSubmitAnswer}
                   disabled={!inputValue.trim() || isSubmitting}
-                  className="p-2 rounded-lg bg-primary hover:bg-primary-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="relative z-10 p-2 rounded-lg bg-primary hover:bg-primary-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isSubmitting ? (
                     <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24">

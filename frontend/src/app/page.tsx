@@ -75,7 +75,13 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen relative overflow-hidden">
+    <main
+      className={
+        currentScreen === 'interview'
+          ? 'min-h-screen relative overflow-x-hidden'
+          : 'min-h-screen relative overflow-hidden'
+      }
+    >
       <div className="fixed inset-0 bg-gradient-radial from-background-elevated via-background to-black z-0" />
 
       {/* Profile icon - top right */}
@@ -83,7 +89,9 @@ export default function Home() {
         <ProfileDropdown />
       </div>
 
-      <div className="relative z-10">
+      <div
+        className={`relative z-10 ${currentScreen === 'interview' ? 'min-h-[100dvh] flex flex-col' : ''}`}
+      >
         <AnimatePresence mode="wait">
           {currentScreen === 'landing' && (
             <motion.div
@@ -121,6 +129,7 @@ export default function Home() {
           {currentScreen === 'interview' && (
             <motion.div
               key="interview"
+              className="flex min-h-[100dvh] w-full flex-1 flex-col"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -169,6 +178,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
+      {currentScreen !== 'interview' && (
       <footer className="fixed bottom-6 left-6 z-20 flex items-center gap-3">
         {/* "Connect for updates" и иконки FB/Instagram убраны; при необходимости раскомментировать ниже */}
         <div className="flex gap-2">
@@ -190,6 +200,7 @@ export default function Home() {
           </a>
         </div>
       </footer>
+      )}
     </main>
   )
 }

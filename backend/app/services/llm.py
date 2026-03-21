@@ -20,6 +20,57 @@ from app.llm_config_loader import (
 from app.schemas.interview import TaskFeedback
 
 
+def build_full_interview_user_message(items: list[dict[str, Any]], selection: dict) -> str:
+    """
+    Явно вшивает в user-сообщение каждый вопрос, ответ кандидата и эталон (как в промпте-схеме).
+    Порядок = порядок задач в сессии.
+    """
+    n = len(items)
+    lines: list[str] = [
+        "Ниже все данные мок-интервью. Вопросы, ответы кандидата и эталоны заданы по номерам.",
+        "",
+        "Параметры выбора перед интервью:",
+        f"- Специализация: {selection.get('specialization', 'не указано')}",
+        f"- Уровень: {selection.get('experience_level', 'не указано')}",
+        f"- Tier компании: {selection.get('company_tier', 'не указано')}",
+        f"- Тема: {selection.get('topic', 'не указано')}",
+        "",
+        f"Всего задач: {n}. Верни JSON с ровно {n} элементами в task_feedbacks (см. системный промпт).",
+        "",
+        "---",
+        "",
+    ]
+    for i, it in enumerate(items, start=1):
+        q = str(it.get("task_question", "")).strip()
+        ua = str(it.get("user_answer", "")).strip()
+        ref_raw = it.get("task_answer")
+        ref = str(ref_raw).strip() if ref_raw else ""
+        ref_block = ref if ref else "— в базе не задан —"
+        subtype = str(it.get("subtype", "general"))
+
+        lines.extend(
+            [
+                f'Вопрос {i}: "{q}"',
+                "",
+                f"Ответ пользователя {i}:",
+                ua if ua else "— пустой ответ —",
+                "",
+                f"Правильный ответ {i} (эталон из базы, для сверки):",
+                ref_block,
+                "",
+                f"(Тип задачи {i}: {subtype})",
+                "",
+                "---",
+                "",
+            ]
+        )
+    lines.append(
+        "Сформируй разбор: для каждого i сначала мысленно сверь ответ с эталоном, "
+        "затем заполни JSON-поля для задачи i. Общий итог — в overall_*."
+    )
+    return "\n".join(lines)
+
+
 class LLMService:
     """Генерация полного фидбека по всем ответам одним запросом к LLM."""
 
@@ -56,26 +107,7 @@ class LLMService:
         """
         system_prompt = get_full_interview_system_prompt()
         temperature = get_full_interview_temperature()
-
-        blocks = []
-        for i, it in enumerate(items, start=1):
-            ref = it.get("task_answer")
-            ref_line = f"\nЭталонный ответ (для контекста):\n{ref}" if ref else ""
-            blocks.append(
-                f"--- Задача {i} (тип: {it.get('subtype', 'general')}) ---\n"
-                f"Вопрос:\n{it.get('task_question', '')}\n"
-                f"{ref_line}\n\n"
-                f"Ответ кандидата:\n{it.get('user_answer', '')}\n"
-            )
-        user_prompt = (
-            f"Параметры интервью:\n"
-            f"- Специализация: {selection.get('specialization', 'не указано')}\n"
-            f"- Уровень: {selection.get('experience_level', 'не указано')}\n"
-            f"- Tier компании: {selection.get('company_tier', 'не указано')}\n"
-            f"- Тема: {selection.get('topic', 'не указано')}\n\n"
-            f"Всего задач: {len(items)}. Верни JSON с ровно {len(items)} элементами в task_feedbacks.\n\n"
-            + "\n".join(blocks)
-        )
+        user_prompt = build_full_interview_user_message(items, selection)
 
         if self._provider == "openai":
             if not self.openai_client:

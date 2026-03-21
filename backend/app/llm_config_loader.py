@@ -62,7 +62,10 @@ def resolve_anthropic_api_key() -> str:
 def get_openai_model() -> str:
     cfg = load_llm_yaml()
     models = cfg.get("models") or {}
-    return str(models.get("openai", "gpt-4o-mini"))
+    m = str(models.get("openai", "gpt-4o-mini")).strip()
+    if m.lower().startswith("openai/"):
+        m = m[7:]
+    return m
 
 
 def get_anthropic_model() -> str:

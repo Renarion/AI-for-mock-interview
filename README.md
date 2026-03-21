@@ -99,6 +99,7 @@ Create these files (examples are provided in the repo):
    - `prompts.full_interview_system` — системный промпт для единого разбора после всех ответов
    - `interview_catalog` — специализации, уровни, tier компаний, темы (отдаются эндпоинтами `/interview/*`)
    - `secrets`: можно указать ключ прямо в YAML **только для локальных тестов** (не коммитьте); иначе используйте `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` в `backend/.env` (имена переменных настраиваются в секции `secrets` YAML).
+   - Пошагово: **`backend/LLM_QUICKSTART.md`**
 
 4. **`frontend/.env.local`** (for local dev)
    ```env

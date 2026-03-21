@@ -155,7 +155,7 @@ certbot --nginx -d analyticsinterview.live -d www.analyticsinterview.live
 
 ---
 
-## Если backend падает: `No such image` / `KeyError: 'ContainerConfig'`
+## Если backend / frontend падает: `No such image` / `KeyError: 'ContainerConfig'`
 
 Так бывает после `docker-compose build`, когда **старый контейнер** всё ещё ссылается на **удалённый образ**, а **docker-compose 1.29** ломается на новом Docker API. Сообщение `*** System restart required ***` к этому **не относится** (это просто напоминание Ubuntu про reboot).
 
@@ -169,15 +169,14 @@ cd ~/AI-for-mock-interview
 # 1. Остановить стек (тома БД сохранятся)
 docker-compose down
 
-# 2. Удалить «битый» контейнер backend по имени из docker-compose.yml
-docker rm -f mock_interview_backend
+# 2. Удалить «битые» контейнеры (имена из docker-compose.yml: container_name)
+docker rm -f mock_interview_backend mock_interview_frontend
 
-# 3. На всякий случай убрать другие остановленные контейнеры с этим именем
-docker ps -a --filter "name=mock_interview_backend" -q | xargs -r docker rm -f
-
-# 4. Поднять заново (образ вы уже собрали)
+# 3. Поднять заново (образы вы уже собрали через build)
 docker-compose up -d
 ```
+
+Если ошибка была **только у frontend** после `build --no-cache frontend`, достаточно удалить **`mock_interview_frontend`** и снова `up -d`. Если **только backend** — **`mock_interview_backend`**.
 
 Если **снова** ошибка `ContainerConfig` — перейдите на **Compose V2** (рекомендуется на Ubuntu 24.04):
 
@@ -199,6 +198,37 @@ docker compose up -d
 docker compose ps
 docker compose logs --tail=40 backend
 ```
+
+---
+
+## Обновление только frontend (после правок в `frontend/`)
+
+На сервере, из корня проекта (где лежит `docker-compose.yml`):
+
+```bash
+cd ~/AI-for-mock-interview
+git pull origin main
+docker-compose build --no-cache frontend
+docker-compose up -d
+```
+
+Если установлен **Compose V2**, замени на:
+
+```bash
+docker compose build --no-cache frontend
+docker compose up -d
+```
+
+**Жёсткое обновление страницы в браузере** (чтобы подтянулся новый JS, а не кэш):
+
+- **Windows / Linux:** `Ctrl + Shift + R` или `Ctrl + F5`
+- **Mac:** `Cmd + Shift + R`
+- Либо откройте сайт в **режиме инкогнито**
+
+**Если в чате интервью появился красный текст про сессию** («Сессия интервью не найдена…»):
+
+1. Нажмите **«Назад»** к главной (или обновите и зайдите заново), пройдите выбор параметров и **начните интервью снова** — так создаётся новая сессия на сервере.
+2. Либо в DevTools браузера → **Application** (Chrome) / **Хранилище** (Firefox) → **Local Storage** → ваш домен → удалите ключ **`interview-storage`** (или очистите всё для этого сайта), затем снова войдите и начните интервью.
 
 ---
 

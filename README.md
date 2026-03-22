@@ -69,27 +69,29 @@ AI-powered mock interview platform for Data Analyst and Product Analyst position
 
 ### Environment Variables
 
-Create these files (examples are provided in the repo):
+Create these files:
 
-1. **Project root `.env`** — copy `.env.example`
+1. **Project root `.env`** (not committed) — used by `docker-compose` for DB password and build-time substitution:
    ```env
+   POSTGRES_PASSWORD=your-db-password
    NEXT_PUBLIC_API_URL=http://localhost:8000
    FRONTEND_URL=http://localhost:3000
    SECRET_KEY=local-dev-secret
    ```
-   This file is used by `docker-compose` for variable substitution during builds.
 
-2. **`backend/.env`** — copy `backend/.env.example`
+2. **`backend/.env`** — создайте вручную (не коммитить), например:
    ```env
    DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/mock_interview
    SECRET_KEY=change-me-in-production
    OPENAI_API_KEY=sk-xxxxx
+   # Опционально: другой OpenAI-compatible endpoint (иначе см. llm_config.yaml)
+   # OPENAI_BASE_URL=https://api.vsellm.ru/v1
    YOOKASSA_SHOP_ID=xxxxx
    YOOKASSA_SECRET_KEY=xxxxx
    DEBUG=false
    FRONTEND_URL=https://analyticsinterview.live
    ```
-   > For local development without Docker set the host in `DATABASE_URL` to `localhost`.
+   > For local development without Docker set the host in `DATABASE_URL` to `localhost`. В Docker `DATABASE_URL` для бэкенда также задаётся из `docker-compose.yml` (пароль из `POSTGRES_PASSWORD` в корневом `.env`).
 
 3. **LLM-настройки** — файл `backend/app/llm_config.yaml`:
    - `models.openai`

@@ -86,9 +86,16 @@ export default function FinalReport({ onRetry, onPaymentRequired, onCloseToHome 
         >
           <h2 className="text-xl font-semibold mb-4">📝 Разбор задач</h2>
           
-          {finalReport.task_feedbacks.map((feedback, index) => (
+          {(finalReport.task_feedbacks ?? []).map((feedback, index) => {
+            if (feedback == null) return null
+            const strengths = feedback.strengths ?? []
+            const improvements = feedback.improvements ?? []
+            const detailed =
+              feedback.detailed_feedback ??
+              'Разбор по этой задаче временно недоступен.'
+            return (
             <motion.div
-              key={feedback.task_id}
+              key={feedback.task_id ?? `task-${index}`}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 + index * 0.1 }}
@@ -96,8 +103,8 @@ export default function FinalReport({ onRetry, onPaymentRequired, onCloseToHome 
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-lg">Задача {index + 1}</h3>
-                <div className={`text-2xl font-bold ${getScoreColor(feedback.score)}`}>
-                  {feedback.score}/100
+                <div className={`text-2xl font-bold ${getScoreColor(feedback.score ?? 0)}`}>
+                  {feedback.score ?? 0}/100
                 </div>
               </div>
               
@@ -105,37 +112,37 @@ export default function FinalReport({ onRetry, onPaymentRequired, onCloseToHome 
                 <h4 className="text-white/60 text-sm mb-2">Вопрос:</h4>
                 <div className="markdown-content text-sm">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {feedback.task_question}
+                    {feedback.task_question ?? ''}
                   </ReactMarkdown>
                 </div>
               </div>
               
               <div className="mb-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
                 <h4 className="text-white/60 text-sm mb-2">Ваш ответ:</h4>
-                <p className="text-white/80 text-sm whitespace-pre-wrap">{feedback.user_answer}</p>
+                <p className="text-white/80 text-sm whitespace-pre-wrap">{feedback.user_answer ?? ''}</p>
               </div>
               
               <div className="grid md:grid-cols-2 gap-4 mb-4">
-                {feedback.strengths.length > 0 && (
+                {strengths.length > 0 && (
                   <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
                     <h4 className="text-green-400 font-medium mb-2 flex items-center gap-2">
                       <span>✅</span> Сильные стороны
                     </h4>
                     <ul className="space-y-1 text-sm text-white/80">
-                      {feedback.strengths.map((s, i) => (
+                      {strengths.map((s, i) => (
                         <li key={i}>• {s}</li>
                       ))}
                     </ul>
                   </div>
                 )}
                 
-                {feedback.improvements.length > 0 && (
+                {improvements.length > 0 && (
                   <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
                     <h4 className="text-yellow-400 font-medium mb-2 flex items-center gap-2">
                       <span>💡</span> Что улучшить
                     </h4>
                     <ul className="space-y-1 text-sm text-white/80">
-                      {feedback.improvements.map((s, i) => (
+                      {improvements.map((s, i) => (
                         <li key={i}>• {s}</li>
                       ))}
                     </ul>
@@ -145,11 +152,12 @@ export default function FinalReport({ onRetry, onPaymentRequired, onCloseToHome 
               
               <div className="markdown-content text-sm">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {feedback.detailed_feedback}
+                  {detailed}
                 </ReactMarkdown>
               </div>
             </motion.div>
-          ))}
+            )
+          })}
         </motion.div>
 
         {/* Overall analysis */}

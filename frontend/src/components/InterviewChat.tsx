@@ -339,28 +339,28 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="text-3xl font-bold text-white">
-                          {message.feedback.score}
+                          {message.feedback.score ?? 0}
                         </span>
                         <span className="text-white/60">/100</span>
                       </div>
                     </div>
                     
-                    {message.feedback.strengths.length > 0 && (
+                    {(message.feedback.strengths ?? []).length > 0 && (
                       <div className="mb-4">
                         <h4 className="text-green-400 font-medium mb-2">✅ Сильные стороны:</h4>
                         <ul className="list-disc list-inside space-y-1 text-white/80">
-                          {message.feedback.strengths.map((s, i) => (
+                          {(message.feedback.strengths ?? []).map((s, i) => (
                             <li key={i}>{s}</li>
                           ))}
                         </ul>
                       </div>
                     )}
                     
-                    {message.feedback.improvements.length > 0 && (
+                    {(message.feedback.improvements ?? []).length > 0 && (
                       <div className="mb-4">
                         <h4 className="text-yellow-400 font-medium mb-2">💡 Что улучшить:</h4>
                         <ul className="list-disc list-inside space-y-1 text-white/80">
-                          {message.feedback.improvements.map((s, i) => (
+                          {(message.feedback.improvements ?? []).map((s, i) => (
                             <li key={i}>{s}</li>
                           ))}
                         </ul>
@@ -369,7 +369,7 @@ export default function InterviewChat({ onComplete, onPaymentRequired }: Intervi
                     
                     <div className="markdown-content">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {message.feedback.detailed_feedback}
+                        {message.feedback.detailed_feedback ?? ''}
                       </ReactMarkdown>
                     </div>
                   </div>

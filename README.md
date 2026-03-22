@@ -99,7 +99,6 @@ Create these files:
    - `prompts.full_interview_system` — системный промпт для единого разбора после всех ответов
    - `interview_catalog` — специализации, уровни, tier компаний, темы (отдаются эндпоинтами `/interview/*`)
    - `secrets`: ключ в YAML **только для локальных тестов** (не коммитьте); иначе `OPENAI_API_KEY` в `backend/.env` (имя переменной — в `secrets.openai_api_key_env`).
-   - Пошагово: **`backend/LLM_QUICKSTART.md`**
 
 4. **`frontend/.env.local`** (for local dev)
    ```env

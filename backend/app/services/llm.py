@@ -168,7 +168,7 @@ class LLMService:
                 f"{raw}\n\n"
                 "OpenAI блокирует запросы из вашего региона/с IP сервера. "
                 "Варианты: перенести бэкенд в поддерживаемый регион, использовать VPN на уровне исходящего трафика, "
-                "или задать в backend/.env совместимый прокси: OPENAI_BASE_URL=… (см. backend/LLM_QUICKSTART.md)."
+                "или задать в backend/.env совместимый прокси: OPENAI_BASE_URL=… (см. README в корне репозитория и `app/llm_config.yaml`)."
             )
         return raw
 

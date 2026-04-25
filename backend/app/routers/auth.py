@@ -8,6 +8,7 @@ from app.services.auth import AuthService, decode_token
 from app.schemas.user import (
     RegisterRequest,
     LoginRequest,
+    ForgotPasswordRequest,
     UserResponse,
     UserStatus,
     UserMeResponse,
@@ -97,6 +98,22 @@ async def login(
         access_token=token,
         user=_user_response(user),
     )
+
+
+@router.post("/forgot-password")
+async def forgot_password(
+    body: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Reset password without verification by login (email or telegram)."""
+    auth_service = AuthService(db)
+    updated = await auth_service.reset_password_by_login(
+        login=body.login,
+        new_password=body.new_password,
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    return {"message": "Пароль успешно обновлён"}
 
 
 @router.get("/status", response_model=UserStatus)

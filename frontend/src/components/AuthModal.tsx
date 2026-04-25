@@ -29,6 +29,7 @@ function EyeIcon({ show }: { show: boolean }) {
 
 export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   const [tab, setTab] = useState<Tab>('login')
+  const [forgotMode, setForgotMode] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const setToken = useAuthStore((s) => s.setToken)
@@ -47,8 +48,16 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   const [showRegPassword, setShowRegPassword] = useState(false)
   const [showRepeatPassword, setShowRepeatPassword] = useState(false)
 
+  // Forgot password
+  const [forgotLogin, setForgotLogin] = useState('')
+  const [forgotPassword, setForgotPassword] = useState('')
+  const [forgotRepeatPassword, setForgotRepeatPassword] = useState('')
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [showForgotRepeatPassword, setShowForgotRepeatPassword] = useState(false)
+
   const resetForm = () => {
     setError(null)
+    setForgotMode(false)
     setLogin('')
     setPassword('')
     setName('')
@@ -56,6 +65,9 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     setTelegramUsername('')
     setRegPassword('')
     setRepeatPassword('')
+    setForgotLogin('')
+    setForgotPassword('')
+    setForgotRepeatPassword('')
   }
 
   const handleClose = () => {
@@ -138,6 +150,38 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     }
   }
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    const trimmedLogin = forgotLogin.trim()
+    if (!trimmedLogin) {
+      setError('Введите почту или Telegram ник')
+      return
+    }
+    if (forgotPassword !== forgotRepeatPassword) {
+      setError('Пароли не совпадают')
+      return
+    }
+    const pwdError = validatePassword(forgotPassword)
+    if (pwdError) {
+      setError(pwdError)
+      return
+    }
+
+    setLoading(true)
+    try {
+      await authApi.forgotPassword({ login: trimmedLogin, new_password: forgotPassword })
+      setForgotMode(false)
+      setTab('login')
+      setLogin(trimmedLogin)
+      setPassword('')
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Не удалось обновить пароль')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (!isOpen) return null
 
   return (
@@ -161,14 +205,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             <div className="flex gap-2 mb-6">
               <button
                 type="button"
-                onClick={() => { setTab('login'); setError(null) }}
+                onClick={() => { setTab('login'); setForgotMode(false); setError(null) }}
                 className={`flex-1 py-2.5 rounded-lg font-medium transition-colors ${tab === 'login' ? 'bg-[#8B5CF6] text-white' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}
               >
                 Вход
               </button>
               <button
                 type="button"
-                onClick={() => { setTab('register'); setError(null) }}
+                onClick={() => { setTab('register'); setForgotMode(false); setError(null) }}
                 className={`flex-1 py-2.5 rounded-lg font-medium transition-colors ${tab === 'register' ? 'bg-[#8B5CF6] text-white' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}
               >
                 Регистрация

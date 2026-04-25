@@ -26,6 +26,12 @@ class LoginRequest(BaseModel):
     password: str = Field(..., max_length=128)
 
 
+class ForgotPasswordRequest(BaseModel):
+    """Schema for password reset without verification."""
+    login: str = Field(..., min_length=1, max_length=255)  # email or telegram username
+    new_password: str = Field(..., min_length=6, max_length=128)
+
+
 class UserResponse(BaseModel):
     """Schema for user response (public)."""
     user_id: str

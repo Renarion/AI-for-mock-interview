@@ -14,19 +14,19 @@ settings = get_settings()
 
 # Pricing plans
 PRICING_PLANS = {
-    "25_questions": PricingPlan(
-        plan_id="25_questions",
+    "100_questions": PricingPlan(
+        plan_id="100_questions",
         name="Basic",
-        questions_count=25,
-        price=100.0,
+        questions_count=100,
+        price=20.0,
         currency="RUB",
-        description="25 вопросов для практики",
+        description="100 вопросов для практики",
     ),
-    "50_questions": PricingPlan(
-        plan_id="50_questions",
+    "1000_questions": PricingPlan(
+        plan_id="1000_questions",
         name="Pro",
-        questions_count=50,
-        price=250.0,
+        questions_count=1000,
+        price=100.0,
         currency="RUB",
         description="",
     ),

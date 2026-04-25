@@ -118,6 +118,26 @@ class AuthService:
         r = await self.db.execute(select(User).where(User.user_id == user_id))
         return r.scalar_one_or_none()
 
+    async def reset_password_by_login(self, login: str, new_password: str) -> bool:
+        """Reset password by email or telegram username without verification."""
+        login_clean = login.strip().lower().lstrip("@")
+        r = await self.db.execute(
+            select(User).where(
+                or_(
+                    User.email == login_clean,
+                    User.telegram_username == login_clean,
+                )
+            )
+        )
+        user = r.scalar_one_or_none()
+        if not user:
+            return False
+
+        user.password_hash = hash_password(new_password)
+        user.password_length = len(new_password)
+        await self.db.flush()
+        return True
+
     async def get_user_status(self, user: User) -> dict:
         """Get user status for frontend."""
         trial = getattr(user, 'trial_questions_left', 1 if user.trial_question_flg else 0)

@@ -69,6 +69,12 @@ export const authApi = {
       '/auth/login',
       { method: 'POST', body: data }
     ),
+
+  forgotPassword: (data: { login: string; new_password: string }) =>
+    apiRequest<{ message: string }>(
+      '/auth/forgot-password',
+      { method: 'POST', body: data }
+    ),
   
   getMe: (token: string) =>
     apiRequest<{

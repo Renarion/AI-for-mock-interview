@@ -80,8 +80,8 @@ export default function PaymentModal({ onClose, onSuccess }: PaymentModalProps) 
   }
 
   const getPlanHighlight = (plan: PricingPlan) => {
-    if (plan.plan_id === '25_questions') return 'Популярный'
-    if (plan.plan_id === '50_questions') return 'Лучшая цена'
+    if (plan.plan_id === '100_questions') return 'Популярный'
+    if (plan.plan_id === '1000_questions') return 'Лучшая цена'
     return null
   }
 

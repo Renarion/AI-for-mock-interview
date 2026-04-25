@@ -88,9 +88,12 @@ class InterviewService:
     
     async def _select_tasks(self, selection: TaskSelection) -> List[Task]:
         """Select tasks based on user preferences."""
+        tier_filters = [selection.company_tier, "common"]
+        level_filters = [selection.experience_level, "common"]
+
         query = select(Task).where(
-            Task.company_tier == selection.company_tier,
-            Task.employee_level == selection.experience_level,
+            Task.company_tier.in_(tier_filters),
+            Task.employee_level.in_(level_filters),
             Task.type == selection.specialization,
         )
         
@@ -107,8 +110,8 @@ class InterviewService:
         if selection.topic == "random" and len(tasks) < 3:
             # Fallback: get any tasks matching tier and level
             fallback_query = select(Task).where(
-                Task.company_tier == selection.company_tier,
-                Task.employee_level == selection.experience_level,
+                Task.company_tier.in_(tier_filters),
+                Task.employee_level.in_(level_filters),
             ).order_by(func.random()).limit(3)
             
             result = await self.db.execute(fallback_query)

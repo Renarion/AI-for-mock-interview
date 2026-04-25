@@ -79,6 +79,14 @@ export default function PaymentModal({ onClose, onSuccess }: PaymentModalProps) 
     }).format(price)
   }
 
+  const formatPricePerQuestion = (pricePerQuestion: number) => {
+    const formatted = new Intl.NumberFormat('ru-RU', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 3,
+    }).format(pricePerQuestion)
+    return `${formatted} ₽`
+  }
+
   const getPlanHighlight = (plan: PricingPlan) => {
     if (plan.plan_id === '100_questions') return 'Популярный'
     if (plan.plan_id === '1000_questions') return 'Лучшая цена'
@@ -148,7 +156,7 @@ export default function PaymentModal({ onClose, onSuccess }: PaymentModalProps) 
                       {formatPrice(plan.price)}
                     </div>
                     <div className="text-xs text-white/40 mt-1">
-                      {formatPrice(pricePerQuestion)}/вопрос
+                      {formatPricePerQuestion(pricePerQuestion)}/вопрос
                     </div>
                   </button>
                 )

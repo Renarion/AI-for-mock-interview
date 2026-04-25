@@ -225,7 +225,81 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               </div>
             )}
 
-            {tab === 'login' && (
+            {forgotMode ? (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div>
+                  <label className="block text-sm text-white/70 mb-1">Почта или ник в Telegram</label>
+                  <input
+                    type="text"
+                    value={forgotLogin}
+                    onChange={(e) => setForgotLogin(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/40 focus:border-[#8B5CF6] focus:outline-none"
+                    placeholder="email@example.com или @username"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-white/70 mb-1">Новый пароль</label>
+                  <div className="relative">
+                    <input
+                      type={showForgotPassword ? 'text' : 'password'}
+                      value={forgotPassword}
+                      onChange={(e) => setForgotPassword(e.target.value)}
+                      className="w-full px-4 py-3 pr-12 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/40 focus:border-[#8B5CF6] focus:outline-none"
+                      placeholder="••••••••"
+                      required
+                      minLength={6}
+                      maxLength={128}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(!showForgotPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+                    >
+                      <EyeIcon show={showForgotPassword} />
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-white/70 mb-1">Повторите новый пароль</label>
+                  <div className="relative">
+                    <input
+                      type={showForgotRepeatPassword ? 'text' : 'password'}
+                      value={forgotRepeatPassword}
+                      onChange={(e) => setForgotRepeatPassword(e.target.value)}
+                      className="w-full px-4 py-3 pr-12 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/40 focus:border-[#8B5CF6] focus:outline-none"
+                      placeholder="••••••••"
+                      required
+                      maxLength={128}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotRepeatPassword(!showForgotRepeatPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+                    >
+                      <EyeIcon show={showForgotRepeatPassword} />
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 rounded-lg bg-gradient-to-r from-[#8B5CF6] to-[#06B6D4] text-white font-medium hover:opacity-90 disabled:opacity-50"
+                >
+                  {loading ? 'Сохранение...' : 'Сменить пароль'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotMode(false)
+                    setError(null)
+                  }}
+                  className="w-full py-2 text-white/50 hover:text-white text-sm"
+                >
+                  Назад ко входу
+                </button>
+              </form>
+            ) : tab === 'login' && (
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
                   <label className="block text-sm text-white/70 mb-1">Почта или ник в Telegram</label>
@@ -266,10 +340,21 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                 >
                   {loading ? 'Вход...' : 'Войти'}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null)
+                    setForgotMode(true)
+                    setForgotLogin(login.trim())
+                  }}
+                  className="w-full py-2 text-white/60 hover:text-white text-sm"
+                >
+                  Забыли пароль?
+                </button>
               </form>
             )}
 
-            {tab === 'register' && (
+            {!forgotMode && tab === 'register' && (
               <form onSubmit={handleRegister} className="space-y-4">
                 <div>
                   <label className="block text-sm text-white/70 mb-1">Имя</label>

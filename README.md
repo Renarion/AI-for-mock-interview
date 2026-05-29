@@ -126,6 +126,16 @@ The application will be available at:
 
 > Backend container automatically runs `alembic upgrade head` on each start (`backend/start.sh`).
 
+### Production (server)
+
+On the server use the production override — binds ports to localhost, adds healthchecks and auto-restart on failure:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+Full hardening steps (firewall, nginx rate limits): see [`deploy/SERVER.md`](deploy/SERVER.md).
+
 ### Running Locally (Development)
 
 **Backend:**

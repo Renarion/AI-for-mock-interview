@@ -1,0 +1,27 @@
+# Production overrides — use on the server:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# - App ports bound to localhost only (nginx on 80/443 is the public entrypoint)
+# - autoheal restarts containers that fail healthchecks
+# - No dev volume mount on backend (runs code baked into the image)
+
+services:
+  backend:
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes: !reset []
+
+  frontend:
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  autoheal:
+    image: willfarrell/autoheal:latest
+    container_name: mock_interview_autoheal
+    restart: always
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: all
+      AUTOHEAL_INTERVAL: 30
+      AUTOHEAL_START_PERIOD: 120
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

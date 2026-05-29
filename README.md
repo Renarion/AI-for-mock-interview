@@ -128,7 +128,7 @@ The application will be available at:
 
 ### Production (server)
 
-On the server use the production override — binds ports to localhost, adds healthchecks and auto-restart on failure:
+On the server use the production override — binds ports to localhost and adds healthchecks. Set up the watchdog cron from `deploy/SERVER.md` for auto-restart on failure:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build

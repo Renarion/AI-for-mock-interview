@@ -1,19 +1,11 @@
-# Production overrides — use on the server:
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-#
-# IMPORTANT: ports must use !reset — otherwise Compose MERGES them with
-# docker-compose.yml and tries to bind 8000/3000 twice ("address already in use").
-#
-# - App ports bound to localhost only (nginx on 80/443 is the public entrypoint)
-# - No dev volume mount on backend (runs code baked into the image)
-# - Auto-restart on hang: deploy/scripts/health-watchdog.sh via cron (see deploy/SERVER.md)
+# Production — publish ports on localhost only (nginx handles public 80/443)
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 services:
   backend:
-    ports: !reset
+    ports:
       - "127.0.0.1:8000:8000"
-    volumes: !reset []
 
   frontend:
-    ports: !reset
+    ports:
       - "127.0.0.1:3000:3000"

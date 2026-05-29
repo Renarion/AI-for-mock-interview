@@ -109,11 +109,11 @@ Create these files:
 ### Running with Docker
 
 ```bash
-# Start all services
-docker-compose up -d
+# Start all services (local dev)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # (Optional) seed database with tasks
 docker-compose exec backend python -m task_migrator.seed_tasks
@@ -131,7 +131,7 @@ The application will be available at:
 On the server use the production override — binds ports to localhost and adds healthchecks. Set up the watchdog cron from `deploy/SERVER.md` for auto-restart on failure:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 Full hardening steps (firewall, nginx rate limits): see [`deploy/SERVER.md`](deploy/SERVER.md).
